@@ -268,6 +268,15 @@ fi
 %{_includedir}/tarantool/luajit.h
 %{_includedir}/tarantool/lualib.h
 %{_includedir}/tarantool/module.h
+%{_includedir}/tarantool/curl/curl.h
+%{_includedir}/tarantool/curl/curlver.h
+%{_includedir}/tarantool/curl/easy.h
+%{_includedir}/tarantool/curl/mprintf.h
+%{_includedir}/tarantool/curl/multi.h
+%{_includedir}/tarantool/curl/stdcheaders.h
+%{_includedir}/tarantool/curl/system.h
+%{_includedir}/tarantool/curl/typecheck-gcc.h
+%{_includedir}/tarantool/curl/urlapi.h
 
 %changelog
 * Tue Sep 12 2017 Roman Tsisyk <roman@tarantool.org> 1.7.5.46-1
