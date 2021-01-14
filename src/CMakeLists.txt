@@ -231,13 +231,12 @@ target_link_libraries(server core bit uri uuid ${ICU_LIBRARIES})
 # Rule of thumb: if exporting a symbol from a static library, list the
 # library here.
 set (reexport_libraries server core misc bitset csv
-     ${LUAJIT_LIBRARIES} ${MSGPUCK_LIBRARIES} ${ICU_LIBRARIES})
+     ${LUAJIT_LIBRARIES} ${MSGPUCK_LIBRARIES} ${ICU_LIBRARIES} ${CURL_LIBRARIES})
 
 set (common_libraries
     ${reexport_libraries}
     ${LIBYAML_LIBRARIES}
     ${READLINE_LIBRARIES}
-    ${CURL_LIBRARIES}
     ${ICONV_LIBRARIES}
     ${OPENSSL_LIBRARIES}
 )
@@ -310,6 +309,8 @@ add_custom_command(
     COMMAND ${CMAKE_SOURCE_DIR}/extra/mkexports
             ${CMAKE_SOURCE_DIR}/extra/exports
             ${exports_file} ${CMAKE_SYSTEM_NAME}
+            ${EXPORT_LIBCURL_SYMBOLS}
+            ${CMAKE_SOURCE_DIR}/extra/curl_symbols
             ${EXPORT_LIST}
 )
 
