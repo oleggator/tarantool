@@ -4,10 +4,22 @@ local tap = require('tap')
 local ffi = require('ffi')
 ffi.cdef([[
     void *dlsym(void *handle, const char *symbol);
+    struct curl_version_info_data {
+        int age;                  /* see description below */
+        const char *version;      /* human readable string */
+        unsigned int version_num; /* numeric representation */
+        const char *host;         /* human readable string */
+        int features;             /* bitmask, see below */
+        char *ssl_version;        /* human readable string */
+        long ssl_version_num;     /* not used, always zero */
+        const char *libz_version; /* human readable string */
+        const char * const *protocols; /* protocols */
+    };
+    struct curl_version_info_data *curl_version_info(int age);
 ]])
 
 local test = tap.test('curl-symbols')
-test:plan(1)
+test:plan(2)
 
 local RTLD_DEFAULT
 -- See `man 3 dlsym`:
@@ -120,5 +132,29 @@ test:test('curl_symbols', function(t)
         )
     end
 end)
+
+--
+-- Check if smtp protocol is enabled.
+--
+local function has_smtp()
+    local i = 0
+    -- curl_version_info_data.protocols is a null terminated array
+    -- of pointers to char.
+    -- See curl/lib/version.c:
+    --   static const char * const protocols[]
+    local info = ffi.C.curl_version_info(7)
+    local protocol = info.protocols[i]
+    while protocol ~= nil do
+        if ffi.string(protocol) == 'smtp' then
+            return true
+        end
+        i = i + 1
+        protocol = info.protocols[i]
+    end
+
+    return false
+end
+
+test:ok(has_smtp(), 'smtp protocol is supported')
 
 os.exit(test:check() and 0 or 1)
