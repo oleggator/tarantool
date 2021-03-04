@@ -89,6 +89,38 @@ mem_create(struct Mem *mem)
 #endif
 }
 
+static inline void
+mem_clear(struct Mem *mem)
+{
+	if ((mem->flags & (MEM_Agg | MEM_Dyn | MEM_Frame)) != 0) {
+		if ((mem->flags & MEM_Agg) != 0)
+			sql_vdbemem_finalize(mem, mem->u.func);
+		assert((mem->flags & MEM_Agg) == 0);
+		if ((mem->flags & MEM_Dyn) != 0) {
+			assert(mem->xDel != SQL_DYNAMIC && mem->xDel != NULL);
+			mem->xDel((void *)mem->z);
+		} else if ((mem->flags & MEM_Frame) != 0) {
+			struct VdbeFrame *frame = mem->u.pFrame;
+			frame->pParent = frame->v->pDelFrame;
+			frame->v->pDelFrame = frame;
+		}
+	}
+	mem->flags = MEM_Null;
+	mem->field_type = field_type_MAX;
+}
+
+void
+mem_destroy(struct Mem *mem)
+{
+	mem_clear(mem);
+	if (mem->szMalloc > 0)
+		sqlDbFree(mem->db, mem->zMalloc);
+	mem->n = 0;
+	mem->z = NULL;
+	mem->szMalloc = 0;
+	mem->zMalloc = NULL;
+}
+
 static inline bool
 mem_has_msgpack_subtype(struct Mem *mem)
 {
@@ -201,56 +233,6 @@ vdbeMemAddTerminator(Mem * pMem)
 }
 
 /*
- * If the memory cell contains a value that must be freed by
- * invoking the external callback in Mem.xDel, then this routine
- * will free that value.  It also sets Mem.flags to MEM_Null.
- *
- * This is a helper routine for sqlVdbeMemSetNull() and
- * for sqlVdbeMemRelease().  Use those other routines as the
- * entry point for releasing Mem resources.
- */
-static SQL_NOINLINE void
-vdbeMemClearExternAndSetNull(Mem * p)
-{
-	assert(VdbeMemDynamic(p));
-	if (p->flags & MEM_Agg) {
-		sql_vdbemem_finalize(p, p->u.func);
-		assert((p->flags & MEM_Agg) == 0);
-		testcase(p->flags & MEM_Dyn);
-	}
-	if (p->flags & MEM_Dyn) {
-		assert(p->xDel != SQL_DYNAMIC && p->xDel != 0);
-		p->xDel((void *)p->z);
-	} else if (p->flags & MEM_Frame) {
-		VdbeFrame *pFrame = p->u.pFrame;
-		pFrame->pParent = pFrame->v->pDelFrame;
-		pFrame->v->pDelFrame = pFrame;
-	}
-	p->flags = MEM_Null;
-}
-
-/*
- * Release memory held by the Mem p, both external memory cleared
- * by p->xDel and memory in p->zMalloc.
- *
- * This is a helper routine invoked by sqlVdbeMemRelease() in
- * the unusual case where there really is memory in p that needs
- * to be freed.
- */
-static SQL_NOINLINE void
-vdbeMemClear(Mem * p)
-{
-	if (VdbeMemDynamic(p)) {
-		vdbeMemClearExternAndSetNull(p);
-	}
-	if (p->szMalloc) {
-		sqlDbFree(p->db, p->zMalloc);
-		p->szMalloc = 0;
-	}
-	p->z = 0;
-}
-
-/*
  * Make an shallow copy of pFrom into pTo.  Prior contents of
  * pTo are freed.  The pFrom->z field is not duplicated.  If
  * pFrom->z is used, then pTo->z points to the same thing as pFrom->z
@@ -259,7 +241,7 @@ vdbeMemClear(Mem * p)
 static SQL_NOINLINE void
 vdbeClrCopy(Mem * pTo, const Mem * pFrom, int eType)
 {
-	vdbeMemClearExternAndSetNull(pTo);
+	mem_clear(pTo);
 	assert(!VdbeMemDynamic(pTo));
 	sqlVdbeMemShallowCopy(pTo, pFrom, eType);
 }
@@ -1148,7 +1130,7 @@ sqlVdbeMemGrow(Mem * pMem, int n, int bPreserve)
 			pMem->zMalloc = sqlDbMallocRaw(pMem->db, n);
 		}
 		if (pMem->zMalloc == 0) {
-			sqlVdbeMemSetNull(pMem);
+			mem_clear(pMem);
 			pMem->z = 0;
 			pMem->szMalloc = 0;
 			return -1;
@@ -1200,7 +1182,7 @@ sqlVdbeMemClearAndResize(Mem * pMem, int szNew)
 void
 mem_set_bool(struct Mem *mem, bool value)
 {
-	sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.b = value;
 	mem->flags = MEM_Bool;
 	mem->field_type = FIELD_TYPE_BOOLEAN;
@@ -1209,7 +1191,7 @@ mem_set_bool(struct Mem *mem, bool value)
 void
 mem_set_ptr(struct Mem *mem, void *ptr)
 {
-	sqlVdbeMemRelease(mem);
+	mem_destroy(mem);
 	mem->flags = MEM_Ptr;
 	mem->u.p = ptr;
 }
@@ -1217,8 +1199,7 @@ mem_set_ptr(struct Mem *mem, void *ptr)
 void
 mem_set_i64(struct Mem *mem, int64_t value)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.i = value;
 	int flag = value < 0 ? MEM_Int : MEM_UInt;
 	MemSetTypeFlag(mem, flag);
@@ -1228,8 +1209,7 @@ mem_set_i64(struct Mem *mem, int64_t value)
 void
 mem_set_u64(struct Mem *mem, uint64_t value)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.u = value;
 	MemSetTypeFlag(mem, MEM_UInt);
 	mem->field_type = FIELD_TYPE_UNSIGNED;
@@ -1238,8 +1218,7 @@ mem_set_u64(struct Mem *mem, uint64_t value)
 void
 mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	if (is_neg) {
 		assert(value < 0);
 		mem->u.i = value;
@@ -1254,7 +1233,7 @@ mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
 void
 mem_set_double(struct Mem *mem, double value)
 {
-	sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	if (sqlIsNaN(value))
 		return;
 	mem->u.r = value;
@@ -1291,7 +1270,7 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 
 	/* If z is a NULL pointer, set pMem to contain an SQL NULL. */
 	if (!z) {
-		sqlVdbeMemSetNull(pMem);
+		mem_clear(pMem);
 		return 0;
 	}
 
@@ -1331,11 +1310,11 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 		}
 		memcpy(pMem->z, z, nAlloc);
 	} else if (xDel == SQL_DYNAMIC) {
-		sqlVdbeMemRelease(pMem);
+		mem_destroy(pMem);
 		pMem->zMalloc = pMem->z = (char *)z;
 		pMem->szMalloc = sqlDbMallocSize(pMem->db, pMem->zMalloc);
 	} else {
-		sqlVdbeMemRelease(pMem);
+		mem_destroy(pMem);
 		pMem->z = (char *)z;
 		pMem->xDel = xDel;
 		flags |= ((xDel == SQL_STATIC) ? MEM_Static : MEM_Dyn);
@@ -1363,21 +1342,17 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
  *
  * This routine calls the Mem.xDel destructor to dispose of values that
  * require the destructor.  But it preserves the Mem.zMalloc memory allocation.
- * To free all resources, use sqlVdbeMemRelease(), which both calls this
+ * To free all resources, use mem_destroy(), which both calls this
  * routine to invoke the destructor and deallocates Mem.zMalloc.
  *
  * Use this routine to reset the Mem prior to insert a new value.
  *
- * Use sqlVdbeMemRelease() to complete erase the Mem prior to abandoning it.
+ * Use mem_destroy() to complete erase the Mem prior to abandoning it.
  */
 void
 sqlVdbeMemSetNull(Mem * pMem)
 {
-	if (VdbeMemDynamic(pMem)) {
-		vdbeMemClearExternAndSetNull(pMem);
-	} else {
-		pMem->flags = MEM_Null;
-	}
+	mem_clear(pMem);
 }
 
 /*
@@ -1387,7 +1362,7 @@ sqlVdbeMemSetNull(Mem * pMem)
 void
 sqlVdbeMemSetZeroBlob(Mem * pMem, int n)
 {
-	sqlVdbeMemRelease(pMem);
+	mem_destroy(pMem);
 	pMem->flags = MEM_Blob | MEM_Zero;
 	pMem->n = 0;
 	if (n < 0)
@@ -1424,7 +1399,7 @@ sqlValueFree(sql_value * v)
 {
 	if (!v)
 		return;
-	sqlVdbeMemRelease((Mem *) v);
+	mem_destroy((Mem *) v);
 	sqlDbFree(((Mem *) v)->db, v);
 }
 
@@ -1447,34 +1422,10 @@ releaseMemArray(Mem * p, int N)
 {
 	if (p && N) {
 		Mem *pEnd = &p[N];
-		sql *db = p->db;
 		do {
 			assert((&p[1]) == pEnd || p[0].db == p[1].db);
 			assert(sqlVdbeCheckMemInvariants(p));
-
-			/* This block is really an inlined version of sqlVdbeMemRelease()
-			 * that takes advantage of the fact that the memory cell value is
-			 * being set to NULL after releasing any dynamic resources.
-			 *
-			 * The justification for duplicating code is that according to
-			 * callgrind, this causes a certain test case to hit the CPU 4.7
-			 * percent less (x86 linux, gcc version 4.1.2, -O6) than if
-			 * sqlMemRelease() were called from here. With -O2, this jumps
-			 * to 6.6 percent. The test case is inserting 1000 rows into a table
-			 * with no indexes using a single prepared INSERT statement, bind()
-			 * and reset(). Inserts are grouped into a transaction.
-			 */
-			testcase(p->flags & MEM_Agg);
-			testcase(p->flags & MEM_Dyn);
-			testcase(p->flags & MEM_Frame);
-			if (p->
-			    flags & (MEM_Agg | MEM_Dyn | MEM_Frame)) {
-				sqlVdbeMemRelease(p);
-			} else if (p->szMalloc) {
-				sqlDbFree(db, p->zMalloc);
-				p->szMalloc = 0;
-			}
-
+			mem_destroy(p);
 			p->flags = MEM_Undefined;
 		} while ((++p) < pEnd);
 	}
@@ -1916,8 +1867,7 @@ sqlVdbeMemCopy(Mem * pTo, const Mem * pFrom)
 {
 	int rc = 0;
 
-	if (VdbeMemDynamic(pTo))
-		vdbeMemClearExternAndSetNull(pTo);
+	mem_clear(pTo);
 	memcpy(pTo, pFrom, MEMCELLSIZE);
 	pTo->flags &= ~MEM_Dyn;
 	if (pTo->flags & (MEM_Str | MEM_Blob)) {
@@ -1957,7 +1907,7 @@ sqlVdbeMemMove(Mem * pTo, Mem * pFrom)
 {
 	assert(pFrom->db == 0 || pTo->db == 0 || pFrom->db == pTo->db);
 
-	sqlVdbeMemRelease(pTo);
+	mem_destroy(pTo);
 	memcpy(pTo, pFrom, sizeof(Mem));
 	pFrom->flags = MEM_Null;
 	pFrom->szMalloc = 0;
@@ -1990,25 +1940,6 @@ sqlVdbeMemMakeWriteable(Mem * pMem)
 #endif
 
 	return 0;
-}
-
-/*
- * Release any memory resources held by the Mem.  Both the memory that is
- * free by Mem.xDel and the Mem.zMalloc allocation are freed.
- *
- * Use this routine prior to clean up prior to abandoning a Mem, or to
- * reset a Mem back to its minimum memory utilization.
- *
- * Use sqlVdbeMemSetNull() to release just the Mem.xDel space
- * prior to inserting new content into the Mem.
- */
-void
-sqlVdbeMemRelease(Mem * p)
-{
-	assert(sqlVdbeCheckMemInvariants(p));
-	if (VdbeMemDynamic(p) || p->szMalloc) {
-		vdbeMemClear(p);
-	}
 }
 
 int
