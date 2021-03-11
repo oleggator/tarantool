@@ -906,11 +906,12 @@ tuple_next_with_type(struct tuple_iterator *it, enum mp_type type)
 		diag_set(ClientError, ER_NO_SUCH_FIELD_NO, it->fieldno);
 		return NULL;
 	}
-	if (mp_typeof(*field) != type) {
-		diag_set(ClientError, ER_FIELD_TYPE,
-			 int2str(fieldno + TUPLE_INDEX_BASE),
-			 mp_type_strs[type]);
-		return NULL;
+	enum mp_type actual_type = mp_typeof(*field);
+	if (actual_type != type) {
+	        diag_set(ClientError, ER_FIELD_TYPE,
+                        int2str(fieldno + TUPLE_INDEX_BASE),
+                        mp_type_strs[type], mp_type_strs[actual_type]);
+	        return NULL;
 	}
 	return field;
 }
@@ -923,14 +924,15 @@ tuple_next_u32(struct tuple_iterator *it, uint32_t *out)
 	const char *field = tuple_next_with_type(it, MP_UINT);
 	if (field == NULL)
 		return -1;
-	uint32_t val = mp_decode_uint(&field);
+	uint64_t val = mp_decode_uint(&field);
+        *out = val;
 	if (val > UINT32_MAX) {
 		diag_set(ClientError, ER_FIELD_TYPE,
 			 int2str(fieldno + TUPLE_INDEX_BASE),
-			 field_type_strs[FIELD_TYPE_UNSIGNED]);
+			 "uint32_t",
+			 "uint64_t");
 		return -1;
 	}
-	*out = val;
 	return 0;
 }
 
@@ -971,11 +973,12 @@ tuple_field_with_type(struct tuple *tuple, uint32_t fieldno, enum mp_type type)
 			 fieldno + TUPLE_INDEX_BASE);
 		return NULL;
 	}
-	if (mp_typeof(*field) != type) {
-		diag_set(ClientError, ER_FIELD_TYPE,
-			 int2str(fieldno + TUPLE_INDEX_BASE),
-			 mp_type_strs[type]);
-		return NULL;
+	enum mp_type actual_type = mp_typeof(*field);
+	if (actual_type != type) {
+	        diag_set(ClientError, ER_FIELD_TYPE,
+                        int2str(fieldno + TUPLE_INDEX_BASE),
+                        mp_type_strs[type], mp_type_strs[actual_type]);
+	        return NULL;
 	}
 	return field;
 }
@@ -1007,7 +1010,8 @@ tuple_field_i64(struct tuple *tuple, uint32_t fieldno, int64_t *out)
 		return -1;
 	}
 	uint64_t val;
-	switch (mp_typeof(*field)) {
+	enum mp_type actual_type = mp_typeof(*field);
+	switch (actual_type) {
 	case MP_INT:
 		*out = mp_decode_int(&field);
 		break;
@@ -1019,9 +1023,10 @@ tuple_field_i64(struct tuple *tuple, uint32_t fieldno, int64_t *out)
 		}
 		FALLTHROUGH;
 	default:
-		diag_set(ClientError, ER_FIELD_TYPE,
-			 int2str(fieldno + TUPLE_INDEX_BASE),
-			 field_type_strs[FIELD_TYPE_INTEGER]);
+	        diag_set(ClientError, ER_FIELD_TYPE,
+                        int2str(fieldno + TUPLE_INDEX_BASE),
+                        field_type_strs[FIELD_TYPE_INTEGER],
+                        field_type_strs[actual_type]);
 		return -1;
 	}
 	return 0;
@@ -1051,12 +1056,13 @@ tuple_field_u32(struct tuple *tuple, uint32_t fieldno, uint32_t *out)
 	const char *field = tuple_field_with_type(tuple, fieldno, MP_UINT);
 	if (field == NULL)
 		return -1;
-	*out = mp_decode_uint(&field);
-	if (*out > UINT32_MAX) {
-		diag_set(ClientError, ER_FIELD_TYPE,
-			 int2str(fieldno + TUPLE_INDEX_BASE),
-			 field_type_strs[FIELD_TYPE_UNSIGNED]);
-		return -1;
+	uint64_t val = mp_decode_uint(&field);
+	*out = val;
+	if (val > UINT32_MAX) {
+	        diag_set(ClientError, ER_FIELD_TYPE,
+                  int2str(fieldno + TUPLE_INDEX_BASE),
+                  "uint32_t", "uint64_t");
+	        return -1;
 	}
 	return 0;
 }

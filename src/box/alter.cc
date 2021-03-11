@@ -3372,13 +3372,14 @@ func_def_new_from_tuple(struct tuple *tuple)
 			return NULL;
 		uint32_t cnt = mp_decode_array(&exports);
 		for (uint32_t i = 0; i < cnt; i++) {
-			if (mp_typeof(*exports) != MP_STR) {
-				diag_set(ClientError, ER_FIELD_TYPE,
-					  int2str(BOX_FUNC_FIELD_EXPORTS + 1),
-					 mp_type_strs[MP_STR]);
-				return NULL;
-			}
-			uint32_t len;
+		        enum mp_type actual_type = mp_typeof(*exports);
+		        if (actual_type != MP_STR) {
+		                diag_set(ClientError, ER_FIELD_TYPE,
+                                        int2str(BOX_FUNC_FIELD_EXPORTS + 1),
+                                        mp_type_strs[MP_STR], mp_type_strs[actual_type]);
+		                return NULL;
+		        }
+		        uint32_t len;
 			const char *str = mp_decode_str(&exports, &len);
 			switch (STRN2ENUM(func_language, str, len)) {
 			case FUNC_LANGUAGE_LUA:
@@ -3409,12 +3410,14 @@ func_def_new_from_tuple(struct tuple *tuple)
 			return NULL;
 		uint32_t argc = mp_decode_array(&param_list);
 		for (uint32_t i = 0; i < argc; i++) {
-			 if (mp_typeof(*param_list) != MP_STR) {
-				diag_set(ClientError, ER_FIELD_TYPE,
-					  int2str(BOX_FUNC_FIELD_PARAM_LIST + 1),
-					 mp_type_strs[MP_STR]);
-				return NULL;
-			}
+		        enum mp_type actual_type = mp_typeof(*param_list);
+		        if (actual_type != MP_STR) {
+		                diag_set(ClientError, ER_FIELD_TYPE,
+                                        int2str(BOX_FUNC_FIELD_PARAM_LIST + 1),
+                                        mp_type_strs[MP_STR],
+                                        mp_type_strs[actual_type]);
+		                return NULL;
+		        }
 			uint32_t len;
 			const char *str = mp_decode_str(&param_list, &len);
 			if (STRN2ENUM(field_type, str, len) == field_type_MAX) {
