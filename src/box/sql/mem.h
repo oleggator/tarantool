@@ -185,6 +185,13 @@ mem_copy_as_ephemeral(struct Mem *to, const struct Mem *from);
 int
 mem_move(struct Mem *to, struct Mem *from);
 
+/**
+ * Concatenate strings or binaries from the first and the second MEMs and write
+ * the result to the third MEM.
+ */
+int
+mem_concat(struct Mem *left, struct Mem *right, struct Mem *result);
+
 /* One or more of the following flags are set to indicate the validOK
  * representations of the value stored in the Mem struct.
  *
