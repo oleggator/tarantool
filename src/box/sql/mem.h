@@ -196,6 +196,10 @@ int
 mem_arithmetic(const struct Mem *left, const struct Mem *right,
 	       struct Mem *result, int op);
 
+int
+mem_compare(const struct Mem *left, const struct Mem *right, int *result,
+	    enum field_type type, struct coll *coll);
+
 /* One or more of the following flags are set to indicate the validOK
  * representations of the value stored in the Mem struct.
  *
