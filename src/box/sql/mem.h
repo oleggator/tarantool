@@ -192,6 +192,10 @@ mem_move(struct Mem *to, struct Mem *from);
 int
 mem_concat(struct Mem *left, struct Mem *right, struct Mem *result);
 
+int
+mem_arithmetic(const struct Mem *left, const struct Mem *right,
+	       struct Mem *result, int op);
+
 /* One or more of the following flags are set to indicate the validOK
  * representations of the value stored in the Mem struct.
  *
@@ -261,8 +265,6 @@ mem_mp_type(struct Mem *mem);
 
 enum mp_type
 sql_value_type(struct Mem *);
-u16
-numericType(Mem *pMem);
 
 int sqlValueBytes(struct Mem *);
 

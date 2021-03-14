@@ -370,6 +370,192 @@ mem_concat(struct Mem *left, struct Mem *right, struct Mem *result)
 	return 0;
 }
 
+int
+mem_arithmetic(const struct Mem *left, const struct Mem *right,
+	       struct Mem *result, int op)
+{
+	sqlVdbeMemSetNull(result);
+	result->field_type = FIELD_TYPE_NUMBER;
+	if (((left->flags | right->flags) & MEM_Null) != 0)
+		return 0;
+
+	int64_t il;
+	bool is_l_neg;
+	double dl;
+	uint16_t type_left = 0;
+	if ((left->flags & MEM_Real) != 0) {
+		dl = left->u.r;
+		type_left = MEM_Real;
+	} else if ((left->flags & MEM_Int) != 0) {
+		il = left->u.i;
+		type_left = MEM_Int;
+		is_l_neg = true;
+	} else if ((left->flags & MEM_UInt) != 0) {
+		il = left->u.i;
+		type_left = MEM_UInt;
+		is_l_neg = false;
+	} else if ((left->flags & (MEM_Str | MEM_Blob)) != 0) {
+		if (sql_atoi64(left->z, &il, &is_l_neg, left->n) == 0)
+			type_left = is_l_neg ? MEM_Int : MEM_UInt;
+		else if (sqlAtoF(left->z, &dl, left->n) != 0)
+			type_left = MEM_Real;
+	}
+
+	int64_t ir;
+	bool is_r_neg;
+	double dr;
+	uint16_t type_right = 0;
+	if ((right->flags & MEM_Real) != 0) {
+		dr = right->u.r;
+		type_right = MEM_Real;
+	} else if ((right->flags & MEM_Int) != 0) {
+		ir = right->u.i;
+		type_right = MEM_Int;
+		is_r_neg = true;
+	} else if ((right->flags & MEM_UInt) != 0) {
+		ir = right->u.i;
+		type_right = MEM_UInt;
+		is_r_neg = false;
+	} else if ((right->flags & (MEM_Str | MEM_Blob)) != 0) {
+		if (sql_atoi64(right->z, &ir, &is_r_neg, right->n) == 0)
+			type_right = is_r_neg ? MEM_Int : MEM_UInt;
+		else if (sqlAtoF(right->z, &dr, right->n) != 0)
+			type_right = MEM_Real;
+	}
+
+	if ((type_right & (MEM_Int | MEM_UInt | MEM_Real)) == 0) {
+		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
+			 mem_str(right), "numeric");
+		return -1;
+	}
+	if ((type_left & (MEM_Int | MEM_UInt | MEM_Real)) == 0) {
+		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
+			 mem_str(left), "numeric");
+		return -1;
+	}
+	if (((type_left | type_right) & MEM_Real) != 0) {
+		if (type_left == MEM_Int)
+			dl = (double)il;
+		else if (type_left == MEM_UInt)
+			dl = (double)(uint64_t)il;
+
+		if (type_right == MEM_Int)
+			dr = (double)ir;
+		else if (type_right == MEM_UInt)
+			dr = (double)(uint64_t)ir;
+
+		double dres;
+		switch(op) {
+		case OP_Add:
+			dres = dl + dr;
+			break;
+		case OP_Subtract:
+			dres = dl - dr;
+			break;
+		case OP_Multiply:
+			dres = dl * dr;
+			break;
+		case OP_Divide:
+			if (dr == 0.) {
+				diag_set(ClientError, ER_SQL_EXECUTE,
+					 "division by zero");
+				return -1;
+			}
+			dres = dl / dr;
+			break;
+		case OP_Remainder: {
+			int64_t il = (int64_t)dl;
+			int64_t ir = (int64_t)dr;
+			if (ir == 0) {
+				diag_set(ClientError, ER_SQL_EXECUTE,
+					 "division by zero");
+				return -1;
+			}
+			if (ir == -1)
+				ir = 1;
+			dres = (double)(il % ir);
+			break;
+		}
+		default:
+			unreachable();
+		}
+		if (sqlIsNaN(dres))
+			return 0;
+		result->u.r = dres;
+		result->flags = MEM_Real;
+		return 0;
+	}
+	int64_t ires;
+	/*
+	 * TODO: This is wrong. Both these flags should already be set. This
+	 * assignment done to not change behaviour of the function, which
+	 * is currently bugged.
+	 */
+	is_l_neg = (left->flags & MEM_Int) != 0;
+	is_r_neg = (right->flags & MEM_Int) != 0;
+	bool is_res_neg;
+	switch(op) {
+	case OP_Add:
+		if (sql_add_int(il, is_l_neg, ir, is_r_neg, &ires,
+				&is_res_neg) != 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "integer is overflowed");
+			return -1;
+		}
+		break;
+	case OP_Subtract:
+		if (sql_sub_int(il, is_l_neg, ir, is_r_neg, &ires,
+				&is_res_neg) != 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "integer is overflowed");
+			return -1;
+		}
+		break;
+	case OP_Multiply:
+		if (sql_mul_int(il, is_l_neg, ir, is_r_neg, &ires,
+				&is_res_neg) != 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "integer is overflowed");
+			return -1;
+		}
+		break;
+	case OP_Divide:
+		if (ir == 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "division by zero");
+			return -1;
+		}
+		if (sql_div_int(il, is_l_neg, ir, is_r_neg, &ires,
+				&is_res_neg) != 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "integer is overflowed");
+			return -1;
+		}
+		break;
+	case OP_Remainder: {
+		if (ir == 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "division by zero");
+			return -1;
+		}
+		if (ir == -1)
+			ir = 1;
+		if (sql_rem_int(il, is_l_neg, ir, is_r_neg, &ires,
+				&is_res_neg) != 0) {
+			diag_set(ClientError, ER_SQL_EXECUTE,
+				 "integer is overflowed");
+			return -1;
+		}
+		break;
+	}
+	default:
+		unreachable();
+	}
+	result->u.i = ires;
+	result->flags = is_res_neg ? MEM_Int : MEM_UInt;
+	return 0;
+}
+
 static inline bool
 mem_has_msgpack_subtype(struct Mem *mem)
 {
@@ -572,44 +758,6 @@ sql_value_type(sql_value *pVal)
 {
 	struct Mem *mem = (struct Mem *) pVal;
 	return mem_mp_type(mem);
-}
-
-
-/*
- * pMem currently only holds a string type (or maybe a BLOB that we can
- * interpret as a string if we want to).  Compute its corresponding
- * numeric type, if has one.  Set the pMem->u.r and pMem->u.i fields
- * accordingly.
- */
-static u16 SQL_NOINLINE
-computeNumericType(Mem *pMem)
-{
-	assert((pMem->flags & (MEM_Int | MEM_UInt | MEM_Real)) == 0);
-	assert((pMem->flags & (MEM_Str|MEM_Blob))!=0);
-	if (sqlAtoF(pMem->z, &pMem->u.r, pMem->n)==0)
-		return 0;
-	bool is_neg;
-	if (sql_atoi64(pMem->z, (int64_t *) &pMem->u.i, &is_neg, pMem->n) == 0)
-		return is_neg ? MEM_Int : MEM_UInt;
-	return MEM_Real;
-}
-
-/*
- * Return the numeric type for pMem, either MEM_Int or MEM_Real or both or
- * none.
- *
- * Unlike mem_apply_numeric_type(), this routine does not modify pMem->flags.
- * But it does set pMem->u.r and pMem->u.i appropriately.
- */
-u16
-numericType(Mem *pMem)
-{
-	if ((pMem->flags & (MEM_Int | MEM_UInt | MEM_Real)) != 0)
-		return pMem->flags & (MEM_Int | MEM_UInt | MEM_Real);
-	if (pMem->flags & (MEM_Str|MEM_Blob)) {
-		return computeNumericType(pMem);
-	}
-	return 0;
 }
 
 /*
