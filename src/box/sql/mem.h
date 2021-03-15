@@ -182,6 +182,30 @@ mem_set_boolean(struct Mem *mem, bool value);
 void
 mem_set_double(struct Mem *mem, double value);
 
+void
+mem_set_ephemeral_string(struct Mem *mem, char *value, uint32_t len);
+
+void
+mem_set_static_string(struct Mem *mem, char *value, uint32_t len);
+
+void
+mem_set_dynamic_string(struct Mem *mem, char *value, uint32_t len);
+
+void
+mem_set_allocated_string(struct Mem *mem, char *value, uint32_t len);
+
+void
+mem_set_ephemeral_string0(struct Mem *mem, char *value);
+
+void
+mem_set_static_string0(struct Mem *mem, char *value);
+
+void
+mem_set_dynamic_string0(struct Mem *mem, char *value);
+
+void
+mem_set_allocated_string0(struct Mem *mem, char *value);
+
 /**
  * Copy content of MEM from one MEM to another. In case source MEM contains
  * string or binary and allocation type is not STATIC, this value is copied to
@@ -426,8 +450,6 @@ int
 sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
 void
 sqlVdbeMemSetZeroBlob(struct Mem *, int);
-void sqlValueSetStr(struct Mem *, int, const void *,
-			void (*)(void *));
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 
