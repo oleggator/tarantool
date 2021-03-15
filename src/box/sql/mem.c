@@ -526,7 +526,7 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 		return 0;
 	int64_t l;
 	int64_t r;
-	int res;
+	int64_t res;
 	bool unused;
 	if (sqlVdbeIntValue(left, &l, &unused) != 0) {
 		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,

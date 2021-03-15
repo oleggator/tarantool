@@ -731,7 +731,7 @@ case OP_Halt: {
  */
 case OP_Integer: {         /* out2 */
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
-	mem_set_i64(pOut, pOp->p1);
+	mem_set_int(pOut, pOp->p1, pOp->p1 < 0);
 	break;
 }
 

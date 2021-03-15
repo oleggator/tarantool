@@ -278,7 +278,7 @@ port_lua_get_vdbemem(struct port *base, uint32_t *size)
 			mem_set_double(&val[i], field.dval);
 			break;
 		case MP_INT:
-			mem_set_i64(&val[i], field.ival);
+			mem_set_int(&val[i], field.ival, true);
 			break;
 		case MP_UINT:
 			mem_set_u64(&val[i], field.ival);
@@ -349,7 +349,7 @@ port_c_get_vdbemem(struct port *base, uint32_t *size)
 			mem_set_double(&val[i], mp_decode_double(&data));
 			break;
 		case MP_INT:
-			mem_set_i64(&val[i], mp_decode_int(&data));
+			mem_set_int(&val[i], mp_decode_int(&data), true);
 			break;
 		case MP_UINT:
 			mem_set_u64(&val[i], mp_decode_uint(&data));
