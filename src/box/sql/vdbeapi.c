@@ -189,7 +189,7 @@ sql_result_uint(sql_context *ctx, uint64_t u_val)
 void
 sql_result_int(sql_context *ctx, int64_t val)
 {
-	mem_set_i64(ctx->pOut, val);
+	mem_set_integer(ctx->pOut, val, val < 0);
 }
 
 void
@@ -840,7 +840,7 @@ sql_bind_int64(sql_stmt * pStmt, int i, sql_int64 iValue)
 		return -1;
 	int rc = sql_bind_type(p, i, "integer");
 	assert(iValue < 0);
-	mem_set_int(&p->aVar[i - 1], iValue, true);
+	mem_set_integer(&p->aVar[i - 1], iValue, true);
 	return rc;
 }
 
