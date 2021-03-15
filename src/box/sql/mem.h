@@ -182,6 +182,9 @@ mem_set_integer(struct Mem *mem, int64_t value, bool is_neg);
 void
 mem_set_unsigned(struct Mem *mem, uint64_t value);
 
+void
+mem_set_boolean(struct Mem *mem, bool value);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -398,9 +401,6 @@ mem_convert_to_numeric(struct Mem *mem, enum field_type type);
 
 int sqlVdbeMemGrow(struct Mem * pMem, int n, int preserve);
 int sqlVdbeMemClearAndResize(struct Mem * pMem, int n);
-
-void
-mem_set_bool(struct Mem *mem, bool value);
 
 /**
  * Set VDBE memory register with given pointer as a data.

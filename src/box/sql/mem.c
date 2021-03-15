@@ -275,6 +275,15 @@ mem_set_unsigned(struct Mem *mem, uint64_t value)
 	mem->field_type = FIELD_TYPE_UNSIGNED;
 }
 
+void
+mem_set_boolean(struct Mem *mem, bool value)
+{
+	mem_clear(mem);
+	mem->u.b = value;
+	mem->flags = MEM_Bool;
+	mem->field_type = FIELD_TYPE_BOOLEAN;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -1402,22 +1411,22 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 		return 0;
 	case FIELD_TYPE_BOOLEAN:
 		if ((pMem->flags & MEM_Int) != 0) {
-			mem_set_bool(pMem, pMem->u.i);
+			mem_set_boolean(pMem, pMem->u.i);
 			return 0;
 		}
 		if ((pMem->flags & MEM_UInt) != 0) {
-			mem_set_bool(pMem, pMem->u.u);
+			mem_set_boolean(pMem, pMem->u.u);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Real) != 0) {
-			mem_set_bool(pMem, pMem->u.r);
+			mem_set_boolean(pMem, pMem->u.r);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Str) != 0) {
 			bool value;
 			if (str_cast_to_boolean(pMem->z, &value) != 0)
 				return -1;
-			mem_set_bool(pMem, value);
+			mem_set_boolean(pMem, value);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Bool) != 0)
@@ -1887,15 +1896,6 @@ sqlVdbeMemClearAndResize(Mem * pMem, int szNew)
 	pMem->z = pMem->zMalloc;
 	pMem->flags &= (MEM_Null | MEM_Int | MEM_Real);
 	return 0;
-}
-
-void
-mem_set_bool(struct Mem *mem, bool value)
-{
-	mem_clear(mem);
-	mem->u.b = value;
-	mem->flags = MEM_Bool;
-	mem->field_type = FIELD_TYPE_BOOLEAN;
 }
 
 void

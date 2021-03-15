@@ -743,7 +743,7 @@ case OP_Integer: {         /* out2 */
 case OP_Bool: {         /* out2 */
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
 	assert(pOp->p1 == 1 || pOp->p1 == 0);
-	mem_set_bool(pOut, pOp->p1);
+	mem_set_boolean(pOut, pOp->p1);
 	break;
 }
 
@@ -1104,7 +1104,7 @@ case OP_Remainder: {           /* same as TK_REM, in1, in2, out3 */
 case OP_CollSeq: {
 	assert(pOp->p4type==P4_COLLSEQ || pOp->p4.pColl == NULL);
 	if (pOp->p1) {
-		mem_set_bool(&aMem[pOp->p1], false);
+		mem_set_boolean(&aMem[pOp->p1], false);
 	}
 	break;
 }
@@ -1564,7 +1564,7 @@ case OP_Ge: {             /* same as TK_GE, jump, in1, in3 */
 			if ((pOp->opcode==OP_Eq)==res2) break;
 		}
 		pOut = vdbe_prepare_null_out(p, pOp->p2);
-		mem_set_bool(pOut, res2);
+		mem_set_boolean(pOut, res2);
 		REGISTER_TRACE(p, pOp->p2, pOut);
 	} else {
 		VdbeBranchTaken(res!=0, (pOp->p5 & SQL_NULLEQ)?2:3);
@@ -1754,7 +1754,7 @@ case OP_Or: {             /* same as TK_OR, in1, in2, out3 */
 	}
 	pOut = vdbe_prepare_null_out(p, pOp->p3);
 	if (v1 != 2)
-		mem_set_bool(pOut, v1);
+		mem_set_boolean(pOut, v1);
 	break;
 }
 
@@ -1775,7 +1775,7 @@ case OP_Not: {                /* same as TK_NOT, in1, out2 */
 				 sql_value_to_diag_str(pIn1), "boolean");
 			goto abort_due_to_error;
 		}
-		mem_set_bool(pOut, ! pIn1->u.b);
+		mem_set_boolean(pOut, ! pIn1->u.b);
 	}
 	break;
 }
@@ -4362,7 +4362,8 @@ case OP_AggStep: {
 	if (pCtx->skipFlag) {
 		assert(pOp[-1].opcode==OP_CollSeq);
 		i = pOp[-1].p1;
-		if (i) mem_set_bool(&aMem[i], true);
+		if (i != 0)
+			mem_set_boolean(&aMem[i], true);
 	}
 	break;
 }
