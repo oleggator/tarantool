@@ -682,8 +682,6 @@ vdbeUnbind(Vdbe * p, int i)
 	i--;
 	pVar = &p->aVar[i];
 	mem_destroy(pVar);
-	pVar->flags = MEM_Null;
-	pVar->field_type = field_type_MAX;
 	return 0;
 }
 
