@@ -200,6 +200,9 @@ int
 mem_bitwise(struct Mem *left, struct Mem *right, struct Mem *result, int op);
 
 int
+mem_bit_not(struct Mem *mem, struct Mem *result);
+
+int
 mem_compare(const struct Mem *left, const struct Mem *right, int *result,
 	    enum field_type type, struct coll *coll);
 

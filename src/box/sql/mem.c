@@ -607,6 +607,25 @@ mem_bitwise(struct Mem *left, struct Mem *right, struct Mem *result, int op)
 	return 0;
 }
 
+int
+mem_bit_not(struct Mem *mem, struct Mem *result)
+{
+	mem_clear(result);
+	result->field_type = FIELD_TYPE_INTEGER;
+	if ((mem->flags & MEM_Null) != 0)
+		return 0;
+	int64_t i;
+	bool unused;
+	if (sqlVdbeIntValue(mem, &i, &unused) != 0) {
+		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
+			 mem_str(mem), "integer");
+		return -1;
+	}
+	i = ~i;
+	mem_set_int(result, i, i < 0);
+	return 0;
+}
+
 static int
 compare_blobs(const struct Mem *left, const struct Mem *right, int *result)
 {
