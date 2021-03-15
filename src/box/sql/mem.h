@@ -428,7 +428,6 @@ void
 sqlVdbeMemSetZeroBlob(struct Mem *, int);
 void sqlValueSetStr(struct Mem *, int, const void *,
 			void (*)(void *));
-void sqlValueSetNull(struct Mem *);
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 
