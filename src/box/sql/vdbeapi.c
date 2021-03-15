@@ -139,6 +139,13 @@ setResultStrOrError(sql_context * pCtx,	/* Function context */
 			mem_set_allocated_string(pCtx->pOut, (char *)z, n);
 		return;
 	}
+	if (xDel != SQL_TRANSIENT) {
+		if (n < 0)
+			mem_set_dynamic_string0(pCtx->pOut, (char *)z);
+		else
+			mem_set_dynamic_string(pCtx->pOut, (char *)z, n);
+		return;
+	}
 	if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 1, xDel) != 0)
 		pCtx->is_aborted = true;
 }
@@ -786,6 +793,11 @@ bindText(sql_stmt * pStmt,	/* The statement to bind against */
 			mem_set_allocated_string0(pVar, (char *)zData);
 		else
 			mem_set_allocated_string(pVar, (char *)zData, nData);
+	} else if (xDel != SQL_TRANSIENT) {
+		if (nData < 0)
+			mem_set_dynamic_string0(pVar, (char *)zData);
+		else
+			mem_set_dynamic_string(pVar, (char *)zData, nData);
 	} else if (sqlVdbeMemSetStr(pVar, zData, nData, 1, xDel) != 0) {
 		return -1;
 	}

@@ -296,79 +296,86 @@ mem_set_double(struct Mem *mem, double value)
 }
 
 static inline void
-mem_set_string(struct Mem *mem, char *value, uint32_t len, int alloc_type)
+mem_set_const_string(struct Mem *mem, char *value, uint32_t len, int alloc_type)
 {
+	assert((alloc_type & (MEM_Static | MEM_Ephem)) != 0);
 	mem_clear(mem);
 	mem->z = value;
 	mem->n = len;
 	mem->flags = MEM_Str | alloc_type;
 	mem->field_type = FIELD_TYPE_STRING;
-	mem->xDel = alloc_type == MEM_Dyn ? sql_free : NULL;
+}
+
+static inline void
+mem_set_dyn_string(struct Mem *mem, char *value, uint32_t len, int alloc_type)
+{
+	assert((mem->flags & MEM_Dyn) == 0 || value != mem->z);
+	assert(mem->szMalloc == 0 || value != mem->zMalloc);
+	assert(alloc_type == MEM_Dyn || alloc_type == 0);
+	mem_destroy(mem);
+	mem->z = value;
+	mem->n = len;
+	mem->flags = MEM_Str | alloc_type;
+	mem->field_type = FIELD_TYPE_STRING;
+	if (alloc_type == MEM_Dyn) {
+		mem->xDel = sql_free;
+	} else {
+		mem->xDel = NULL;
+		mem->zMalloc = mem->z;
+		mem->szMalloc = sqlDbMallocSize(mem->db, mem->zMalloc);
+	}
 }
 
 void
 mem_set_ephemeral_string(struct Mem *mem, char *value, uint32_t len)
 {
-	mem_set_string(mem, value, len, MEM_Ephem);
+	mem_set_const_string(mem, value, len, MEM_Ephem);
 }
 
 void
 mem_set_static_string(struct Mem *mem, char *value, uint32_t len)
 {
-	mem_set_string(mem, value, len, MEM_Static);
+	mem_set_const_string(mem, value, len, MEM_Static);
 }
 
 void
 mem_set_dynamic_string(struct Mem *mem, char *value, uint32_t len)
 {
-	mem_set_string(mem, value, len, MEM_Dyn);
+	mem_set_dyn_string(mem, value, len, MEM_Dyn);
 }
 
 void
 mem_set_allocated_string(struct Mem *mem, char *value, uint32_t len)
 {
-	assert(value != mem->zMalloc);
-	mem_destroy(mem);
-	mem->z = value;
-	mem->n = len;
-	mem->flags = MEM_Str;
-	mem->field_type = FIELD_TYPE_STRING;
-	mem->zMalloc = mem->z;
-	mem->szMalloc = sqlDbMallocSize(mem->db, mem->zMalloc);
+	mem_set_dyn_string(mem, value, len, 0);
 }
 
 void
 mem_set_ephemeral_string0(struct Mem *mem, char *value)
 {
-	mem_set_string(mem, value, strlen(value), MEM_Ephem);
+	mem_set_const_string(mem, value, strlen(value), MEM_Ephem);
 	mem->flags |= MEM_Term;
 }
 
 void
 mem_set_static_string0(struct Mem *mem, char *value)
 {
-	mem_set_string(mem, value, strlen(value), MEM_Static);
+	mem_set_const_string(mem, value, strlen(value), MEM_Static);
 	mem->flags |= MEM_Term;
 }
 
 void
 mem_set_dynamic_string0(struct Mem *mem, char *value)
 {
-	mem_set_string(mem, value, strlen(value), MEM_Dyn);
+	mem_set_dyn_string(mem, value, strlen(value), MEM_Dyn);
 	mem->flags |= MEM_Term;
 }
 
 void
 mem_set_allocated_string0(struct Mem *mem, char *value)
 {
-	assert(value != mem->zMalloc);
-	mem_destroy(mem);
-	mem->z = value;
-	mem->n = strlen(value);
-	mem->flags = MEM_Str | MEM_Term;
-	mem->field_type = FIELD_TYPE_STRING;
-	mem->zMalloc = mem->z;
-	mem->szMalloc = sqlDbMallocSize(mem->db, mem->zMalloc);
+	mem_set_dyn_string(mem, value, strlen(value), 0);
+	mem->flags |= MEM_Term;
 }
 
 int
