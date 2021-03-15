@@ -298,7 +298,7 @@ valueNew(sql * db, struct ValueNewStat4Ctx *p)
 // 			if (pVal->flags & MEM_Real) {
 // 				pVal->u.r = -pVal->u.r;
 // 			} else if ((pVal->flags & MEM_Int) != 0) {
-// 				mem_set_u64(pVal, (uint64_t)(-pVal->u.i));
+// 				mem_set_unsigned(pVal, (uint64_t)(-pVal->u.i));
 // 			} else if ((pVal->flags & MEM_UInt) != 0) {
 // 				if (pVal->u.u > (uint64_t) INT64_MAX + 1) {
 // 					/*

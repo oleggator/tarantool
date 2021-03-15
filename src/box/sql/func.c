@@ -281,7 +281,7 @@ port_lua_get_vdbemem(struct port *base, uint32_t *size)
 			mem_set_integer(&val[i], field.ival, true);
 			break;
 		case MP_UINT:
-			mem_set_u64(&val[i], field.ival);
+			mem_set_unsigned(&val[i], field.ival);
 			break;
 		case MP_STR:
 			if (sqlVdbeMemSetStr(&val[i], field.sval.data,
@@ -352,7 +352,7 @@ port_c_get_vdbemem(struct port *base, uint32_t *size)
 			mem_set_integer(&val[i], mp_decode_int(&data), true);
 			break;
 		case MP_UINT:
-			mem_set_u64(&val[i], mp_decode_uint(&data));
+			mem_set_unsigned(&val[i], mp_decode_uint(&data));
 			break;
 		case MP_STR:
 			str = mp_decode_str(&data, &len);

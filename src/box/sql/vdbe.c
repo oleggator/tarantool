@@ -577,7 +577,7 @@ case OP_Gosub: {            /* jump */
 	pIn1 = &aMem[pOp->p1];
 	assert(VdbeMemDynamic(pIn1)==0);
 	memAboutToChange(p, pIn1);
-	mem_set_u64(pIn1, pOp - aOp);
+	mem_set_unsigned(pIn1, pOp - aOp);
 	REGISTER_TRACE(p, pOp->p1, pIn1);
 
 	/* Most jump operations do a goto to this spot in order to update
@@ -618,7 +618,7 @@ case OP_InitCoroutine: {     /* jump */
 	assert(pOp->p3>0 && pOp->p3<p->nOp);
 	pOut = &aMem[pOp->p1];
 	assert(!VdbeMemDynamic(pOut));
-	mem_set_u64(pOut, pOp->p3 - 1);
+	mem_set_unsigned(pOut, pOp->p3 - 1);
 	if (pOp->p2) goto jump_to_p2;
 	break;
 }
@@ -661,7 +661,7 @@ case OP_Yield: {            /* in1, jump */
 	pIn1 = &aMem[pOp->p1];
 	assert(VdbeMemDynamic(pIn1)==0);
 	int pcDest = (int)pIn1->u.u;
-	mem_set_u64(pIn1, pOp - aOp);
+	mem_set_unsigned(pIn1, pOp - aOp);
 	REGISTER_TRACE(p, pOp->p1, pIn1);
 	pOp = &aOp[pcDest];
 	break;
@@ -2142,7 +2142,7 @@ case OP_Count: {         /* out2 */
 		nEntry = tarantoolsqlEphemeralCount(pCrsr);
 	}
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
-	mem_set_u64(pOut, nEntry);
+	mem_set_unsigned(pOut, nEntry);
 	break;
 }
 
@@ -2920,7 +2920,7 @@ case OP_Sequence: {           /* out2 */
 	assert(p->apCsr[pOp->p1]!=0);
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
 	int64_t seq_val = p->apCsr[pOp->p1]->seqCount++;
-	mem_set_u64(pOut, seq_val);
+	mem_set_unsigned(pOut, seq_val);
 	break;
 }
 
@@ -2936,7 +2936,7 @@ case OP_NextSequenceId: {
 	uint64_t id = 0;
 	tarantoolSqlNextSeqId(&id);
 	id++;
-	mem_set_u64(pOut, id);
+	mem_set_unsigned(pOut, id);
 	break;
 }
 
@@ -2966,7 +2966,7 @@ case OP_NextIdEphemeral: {
 		goto abort_due_to_error;
 	}
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
-	mem_set_u64(pOut, rowid);
+	mem_set_unsigned(pOut, rowid);
 	break;
 }
 
@@ -4231,7 +4231,7 @@ case OP_OffsetLimit: {    /* in1, out2, in3 */
 			"values should not result in integer overflow");
 		goto abort_due_to_error;
 	}
-	mem_set_u64(pOut, x);
+	mem_set_unsigned(pOut, x);
 	break;
 }
 
