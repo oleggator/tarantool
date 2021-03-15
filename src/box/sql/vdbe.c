@@ -1792,18 +1792,8 @@ case OP_Not: {                /* same as TK_NOT, in1, out2 */
 case OP_BitNot: {             /* same as TK_BITNOT, in1, out2 */
 	pIn1 = &aMem[pOp->p1];
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
-	/* Force NULL be of type INTEGER. */
-	pOut->field_type = FIELD_TYPE_INTEGER;
-	if (!mem_is_null(pIn1)) {
-		int64_t i;
-		bool is_neg;
-		if (sqlVdbeIntValue(pIn1, &i, &is_neg) != 0) {
-			diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
-				 sql_value_to_diag_str(pIn1), "integer");
-			goto abort_due_to_error;
-		}
-		mem_set_i64(pOut, ~i);
-	}
+	if (mem_bit_not(pIn1, pOut) != 0)
+		goto abort_due_to_error;
 	break;
 }
 
