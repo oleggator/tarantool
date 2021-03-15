@@ -257,6 +257,15 @@ mem_set_null(struct Mem *mem)
 	mem_clear(mem);
 }
 
+void
+mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
+{
+	mem_clear(mem);
+	mem->u.i = value;
+	mem->flags = is_neg ? MEM_Int : MEM_UInt;
+	mem->field_type = FIELD_TYPE_INTEGER;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -503,8 +512,7 @@ mem_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result, int op)
 	default:
 		unreachable();
 	}
-	result->u.i = res;
-	result->flags = is_res_neg ? MEM_Int : MEM_UInt;
+	mem_set_int(result, res, is_res_neg);
 	return 0;
 }
 
@@ -518,6 +526,7 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 		return 0;
 	int64_t l;
 	int64_t r;
+	int res;
 	bool unused;
 	if (sqlVdbeIntValue(left, &l, &unused) != 0) {
 		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
@@ -530,13 +539,13 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 		return -1;
 	}
 	if (op == OP_BitAnd) {
-		result->u.i = l & r;
-		result->flags = result->u.i < 0 ? MEM_Int : MEM_UInt;
+		res = l & r;
+		mem_set_int(result, res, res < 0);
 		return 0;
 	}
 	if (op == OP_BitOr) {
-		result->u.i = l | r;
-		result->flags = result->u.i < 0 ? MEM_Int : MEM_UInt;
+		res = l | r;
+		mem_set_int(result, res, res < 0);
 		return 0;
 	}
 	assert(op == OP_ShiftRight || op == OP_ShiftLeft);
@@ -546,17 +555,17 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 		r = r < -64 ? 64 : -r;
 	}
 	if (r >= 64) {
-		result->u.i = is_left_shift || l >= 0 ? 0 : -1;
-		result->flags = result->u.i < 0 ? MEM_Int : MEM_UInt;
+		res = is_left_shift || l >= 0 ? 0 : -1;
+		mem_set_int(result, res, res < 0);
 		return 0;
 	}
 	if (is_left_shift) {
-		result->u.i = l << r;
-		result->flags = result->u.i < 0 ? MEM_Int : MEM_UInt;
+		res = l << r;
+		mem_set_int(result, res, res < 0);
 		return 0;
 	}
-	result->u.i = l >> r;
-	result->flags = result->u.i < 0 ? MEM_Int : MEM_UInt;
+	res = l >> r;
+	mem_set_int(result, res, res < 0);
 	return 0;
 }
 
@@ -1349,8 +1358,7 @@ vdbe_mem_numerify(struct Mem *mem)
 	if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real | MEM_Null)) != 0)
 		return 0;
 	if ((mem->flags & MEM_Bool) != 0) {
-		mem->u.u = mem->u.b;
-		MemSetTypeFlag(mem, MEM_UInt);
+		mem_set_int(mem, (int64_t)mem->u.b, false);
 		return 0;
 	}
 	assert((mem->flags & (MEM_Blob | MEM_Str)) != 0);
@@ -1419,8 +1427,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 			return 0;
 		}
 		if ((pMem->flags & MEM_Bool) != 0) {
-			pMem->u.u = pMem->u.b;
-			MemSetTypeFlag(pMem, MEM_UInt);
+			mem_set_int(pMem, (int64_t)pMem->u.b, false);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Real) != 0) {
@@ -1905,21 +1912,6 @@ mem_set_u64(struct Mem *mem, uint64_t value)
 	mem->u.u = value;
 	MemSetTypeFlag(mem, MEM_UInt);
 	mem->field_type = FIELD_TYPE_UNSIGNED;
-}
-
-void
-mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
-{
-	mem_clear(mem);
-	if (is_neg) {
-		assert(value < 0);
-		mem->u.i = value;
-		MemSetTypeFlag(mem, MEM_Int);
-	} else {
-		mem->u.u = value;
-		MemSetTypeFlag(mem, MEM_UInt);
-	}
-	mem->field_type = FIELD_TYPE_INTEGER;
 }
 
 void

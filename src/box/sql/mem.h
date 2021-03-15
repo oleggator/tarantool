@@ -172,6 +172,13 @@ mem_destroy(struct Mem *mem);
 void
 mem_set_null(struct Mem *mem);
 
+/**
+ * Set integer value. According to is_neg flag value is considered
+ * to be signed or unsigned.
+ */
+void
+mem_set_int(struct Mem *mem, int64_t value, bool is_neg);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -410,13 +417,6 @@ mem_set_i64(struct Mem *mem, int64_t value);
 /** Set unsigned value and MEM_UInt flag. */
 void
 mem_set_u64(struct Mem *mem, uint64_t value);
-
-/**
- * Set integer value. According to is_neg flag value is considered
- * to be signed or unsigned.
- */
-void
-mem_set_int(struct Mem *mem, int64_t value, bool is_neg);
 
 /** Set double value and MEM_Real flag. */
 void
