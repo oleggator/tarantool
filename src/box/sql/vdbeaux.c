@@ -1324,13 +1324,13 @@ sqlVdbeList(Vdbe * p)
 			}
 		}
 
-		mem_set_int(pMem, pOp->p1, pOp->p1 < 0);
+		mem_set_integer(pMem, pOp->p1, pOp->p1 < 0);
 		pMem++;
 
-		mem_set_int(pMem, pOp->p2, pOp->p2 < 0);
+		mem_set_integer(pMem, pOp->p2, pOp->p2 < 0);
 		pMem++;
 
-		mem_set_int(pMem, pOp->p3, pOp->p3 < 0);
+		mem_set_integer(pMem, pOp->p3, pOp->p3 < 0);
 		pMem++;
 
 		if (sqlVdbeMemClearAndResize(pMem, 256)) {

@@ -258,7 +258,7 @@ mem_set_null(struct Mem *mem)
 }
 
 void
-mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
+mem_set_integer(struct Mem *mem, int64_t value, bool is_neg)
 {
 	mem_clear(mem);
 	mem->u.i = value;
@@ -512,7 +512,7 @@ mem_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result, int op)
 	default:
 		unreachable();
 	}
-	mem_set_int(result, res, is_res_neg);
+	mem_set_integer(result, res, is_res_neg);
 	return 0;
 }
 
@@ -540,12 +540,12 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 	}
 	if (op == OP_BitAnd) {
 		res = l & r;
-		mem_set_int(result, res, res < 0);
+		mem_set_integer(result, res, res < 0);
 		return 0;
 	}
 	if (op == OP_BitOr) {
 		res = l | r;
-		mem_set_int(result, res, res < 0);
+		mem_set_integer(result, res, res < 0);
 		return 0;
 	}
 	assert(op == OP_ShiftRight || op == OP_ShiftLeft);
@@ -556,16 +556,16 @@ mem_bitwise_arithmetic(struct Mem *left, struct Mem *right, struct Mem *result,
 	}
 	if (r >= 64) {
 		res = is_left_shift || l >= 0 ? 0 : -1;
-		mem_set_int(result, res, res < 0);
+		mem_set_integer(result, res, res < 0);
 		return 0;
 	}
 	if (is_left_shift) {
 		res = l << r;
-		mem_set_int(result, res, res < 0);
+		mem_set_integer(result, res, res < 0);
 		return 0;
 	}
 	res = l >> r;
-	mem_set_int(result, res, res < 0);
+	mem_set_integer(result, res, res < 0);
 	return 0;
 }
 
@@ -584,7 +584,7 @@ mem_bit_not(struct Mem *mem, struct Mem *result)
 		return -1;
 	}
 	i = ~i;
-	mem_set_int(result, i, i < 0);
+	mem_set_integer(result, i, i < 0);
 	return 0;
 }
 
@@ -1327,7 +1327,7 @@ mem_apply_numeric_type(struct Mem *record)
 	int64_t integer_value;
 	bool is_neg;
 	if (sql_atoi64(record->z, &integer_value, &is_neg, record->n) == 0) {
-		mem_set_int(record, integer_value, is_neg);
+		mem_set_integer(record, integer_value, is_neg);
 		return 0;
 	}
 	double float_value;
@@ -1358,14 +1358,14 @@ vdbe_mem_numerify(struct Mem *mem)
 	if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real | MEM_Null)) != 0)
 		return 0;
 	if ((mem->flags & MEM_Bool) != 0) {
-		mem_set_int(mem, (int64_t)mem->u.b, false);
+		mem_set_integer(mem, (int64_t)mem->u.b, false);
 		return 0;
 	}
 	assert((mem->flags & (MEM_Blob | MEM_Str)) != 0);
 	bool is_neg;
 	int64_t i;
 	if (sql_atoi64(mem->z, &i, &is_neg, mem->n) == 0) {
-		mem_set_int(mem, i, is_neg);
+		mem_set_integer(mem, i, is_neg);
 	} else {
 		double d;
 		if (sqlAtoF(mem->z, &d, mem->n) == 0)
@@ -1423,11 +1423,11 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 				return -1;
 			if (type == FIELD_TYPE_UNSIGNED && is_neg)
 				return -1;
-			mem_set_int(pMem, val, is_neg);
+			mem_set_integer(pMem, val, is_neg);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Bool) != 0) {
-			mem_set_int(pMem, (int64_t)pMem->u.b, false);
+			mem_set_integer(pMem, (int64_t)pMem->u.b, false);
 			return 0;
 		}
 		if ((pMem->flags & MEM_Real) != 0) {
@@ -1435,7 +1435,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 			if (sqlVdbeRealValue(pMem, &d) != 0)
 				return -1;
 			if (d < (double)INT64_MAX && d >= (double)INT64_MIN) {
-				mem_set_int(pMem, d, d <= -1);
+				mem_set_integer(pMem, d, d <= -1);
 				return 0;
 			}
 			if (d >= (double)INT64_MAX && d < (double)UINT64_MAX) {
@@ -1491,7 +1491,7 @@ mem_apply_integer_type(Mem *pMem)
 	assert(EIGHT_BYTE_ALIGNMENT(pMem));
 
 	if ((rc = doubleToInt64(pMem->u.r, (int64_t *) &ix)) == 0)
-		mem_set_int(pMem, ix, pMem->u.r <= -1);
+		mem_set_integer(pMem, ix, pMem->u.r <= -1);
 	return rc;
 }
 
@@ -1640,8 +1640,10 @@ mem_apply_type(struct Mem *record, enum field_type type)
 			} else {
 				if (double_compare_nint64(d, INT64_MIN, 1) < 0)
 					return 0;
-				if ((double)(int64_t)d == d)
-					mem_set_int(record, (int64_t)d, true);
+				if ((double)(int64_t)d == d) {
+					mem_set_integer(record, (int64_t)d,
+							true);
+				}
 			}
 			return 0;
 		}
@@ -1650,7 +1652,7 @@ mem_apply_type(struct Mem *record, enum field_type type)
 			int64_t i;
 			if (sql_atoi64(record->z, &i, &is_neg, record->n) != 0)
 				return -1;
-			mem_set_int(record, i, is_neg);
+			mem_set_integer(record, i, is_neg);
 		}
 		if ((record->flags & MEM_Int) == MEM_Int) {
 			if (type == FIELD_TYPE_UNSIGNED)
@@ -1774,9 +1776,9 @@ mem_convert_to_integer(struct Mem *mem)
 	if (d >= (double)UINT64_MAX || d < (double)INT64_MIN)
 		return -1;
 	if (d < (double)INT64_MAX)
-		mem_set_int(mem, (int64_t) d, d < 0);
+		mem_set_integer(mem, (int64_t) d, d < 0);
 	else
-		mem_set_int(mem, (uint64_t) d, false);
+		mem_set_integer(mem, (uint64_t) d, false);
 	return 0;
 }
 

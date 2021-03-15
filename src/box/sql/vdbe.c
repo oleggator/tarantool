@@ -731,7 +731,7 @@ case OP_Halt: {
  */
 case OP_Integer: {         /* out2 */
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
-	mem_set_int(pOut, pOp->p1, pOp->p1 < 0);
+	mem_set_integer(pOut, pOp->p1, pOp->p1 < 0);
 	break;
 }
 
@@ -756,7 +756,7 @@ case OP_Bool: {         /* out2 */
 case OP_Int64: {           /* out2 */
 	pOut = vdbe_prepare_null_out(p, pOp->p2);
 	assert(pOp->p4.pI64!=0);
-	mem_set_int(pOut, *pOp->p4.pI64, pOp->p4type == P4_INT64);
+	mem_set_integer(pOut, *pOp->p4.pI64, pOp->p4type == P4_INT64);
 	break;
 }
 
@@ -2708,7 +2708,7 @@ skip_truncate:
 	r.nField = (u16)nField;
 
 	if (int_field > 0)
-		mem_set_int(&aMem[int_field], iKey, is_neg);
+		mem_set_integer(&aMem[int_field], iKey, is_neg);
 
 	r.default_rc = ((1 & (oc - OP_SeekLT)) ? -1 : +1);
 	assert(oc!=OP_SeekGT || r.default_rc==-1);
@@ -2999,7 +2999,7 @@ case OP_FCopy: {     /* out2 */
 		assert(mem_is_integer(pIn1));
 
 		pOut = vdbe_prepare_null_out(p, pOp->p2);
-		mem_set_int(pOut, pIn1->u.i, pIn1->flags == MEM_Int);
+		mem_set_integer(pOut, pIn1->u.i, pIn1->flags == MEM_Int);
 		pOut->field_type = pIn1->field_type;
 	}
 	break;

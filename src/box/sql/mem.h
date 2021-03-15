@@ -177,7 +177,7 @@ mem_set_null(struct Mem *mem);
  * to be signed or unsigned.
  */
 void
-mem_set_int(struct Mem *mem, int64_t value, bool is_neg);
+mem_set_integer(struct Mem *mem, int64_t value, bool is_neg);
 
 int
 mem_copy(struct Mem *to, const struct Mem *from);
