@@ -1291,7 +1291,7 @@ sqlVdbeList(Vdbe * p)
 		}
 		if (p->explain == 1) {
 			assert(i >= 0);
-			mem_set_u64(pMem, i);
+			mem_set_unsigned(pMem, i);
 
 			pMem++;
 

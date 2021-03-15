@@ -272,6 +272,15 @@ mem_set_integer(struct Mem *mem, int64_t value, bool is_neg)
 	mem->field_type = FIELD_TYPE_INTEGER;
 }
 
+void
+mem_set_unsigned(struct Mem *mem, uint64_t value)
+{
+	mem_clear(mem);
+	mem->u.u = value;
+	mem->flags = MEM_UInt;
+	mem->field_type = FIELD_TYPE_UNSIGNED;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -1449,7 +1458,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 				return 0;
 			}
 			if (d >= (double)INT64_MAX && d < (double)UINT64_MAX) {
-				mem_set_u64(pMem, d);
+				mem_set_unsigned(pMem, d);
 				return 0;
 			}
 			return -1;
@@ -1646,7 +1655,7 @@ mem_apply_type(struct Mem *record, enum field_type type)
 							  1) > 0)
 					return 0;
 				if ((double)(uint64_t)d == d)
-					mem_set_u64(record, (uint64_t)d);
+					mem_set_unsigned(record, (uint64_t)d);
 			} else {
 				if (double_compare_nint64(d, INT64_MIN, 1) < 0)
 					return 0;
@@ -1765,7 +1774,7 @@ mem_convert_to_unsigned(struct Mem *mem)
 	double d = mem->u.r;
 	if (d < 0.0 || d >= (double)UINT64_MAX)
 		return -1;
-	mem_set_u64(mem, (uint64_t) d);
+	mem_set_unsigned(mem, (uint64_t) d);
 	return 0;
 }
 
@@ -1905,15 +1914,6 @@ mem_set_ptr(struct Mem *mem, void *ptr)
 	mem_destroy(mem);
 	mem->flags = MEM_Ptr;
 	mem->u.p = ptr;
-}
-
-void
-mem_set_u64(struct Mem *mem, uint64_t value)
-{
-	mem_clear(mem);
-	mem->u.u = value;
-	MemSetTypeFlag(mem, MEM_UInt);
-	mem->field_type = FIELD_TYPE_UNSIGNED;
 }
 
 void

@@ -173,6 +173,9 @@ mem_set_null(struct Mem *mem);
 void
 mem_set_integer(struct Mem *mem, int64_t value, bool is_neg);
 
+void
+mem_set_unsigned(struct Mem *mem, uint64_t value);
+
 /**
  * Copy content of MEM from one MEM to another. In case source MEM contains
  * string or binary and allocation type is not STATIC, this value is copied to
@@ -415,10 +418,6 @@ mem_set_bool(struct Mem *mem, bool value);
  */
 void
 mem_set_ptr(struct Mem *mem, void *ptr);
-
-/** Set unsigned value and MEM_UInt flag. */
-void
-mem_set_u64(struct Mem *mem, uint64_t value);
 
 /** Set double value and MEM_Real flag. */
 void
