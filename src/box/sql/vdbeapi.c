@@ -146,7 +146,12 @@ setResultStrOrError(sql_context * pCtx,	/* Function context */
 			mem_set_dynamic_string(pCtx->pOut, (char *)z, n);
 		return;
 	}
-	if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 1, xDel) != 0)
+	if (n < 0) {
+		if (mem_copy_string0(pCtx->pOut, z) != 0)
+			pCtx->is_aborted = true;
+		return;
+	}
+	if (mem_copy_string(pCtx->pOut, z, n) != 0)
 		pCtx->is_aborted = true;
 }
 
@@ -798,8 +803,14 @@ bindText(sql_stmt * pStmt,	/* The statement to bind against */
 			mem_set_dynamic_string0(pVar, (char *)zData);
 		else
 			mem_set_dynamic_string(pVar, (char *)zData, nData);
-	} else if (sqlVdbeMemSetStr(pVar, zData, nData, 1, xDel) != 0) {
-		return -1;
+	} else {
+		if (nData < 0) {
+			if (mem_copy_string0(pVar, zData) != 0)
+				return -1;
+		} else {
+			if (mem_copy_string(pVar, zData, nData) != 0)
+				return -1;
+		}
 	}
 	return sql_bind_type(p, i, "text");
 }
