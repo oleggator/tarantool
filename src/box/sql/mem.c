@@ -295,6 +295,57 @@ mem_set_double(struct Mem *mem, double value)
 	mem->flags = MEM_Real;
 }
 
+static inline void
+mem_set_string(struct Mem *mem, char *value, uint32_t len, int alloc_type)
+{
+	mem_clear(mem);
+	mem->z = value;
+	mem->n = len;
+	mem->flags = MEM_Str | alloc_type;
+	mem->field_type = FIELD_TYPE_STRING;
+}
+
+void
+mem_set_ephemeral_string(struct Mem *mem, char *value, uint32_t len)
+{
+	mem_set_string(mem, value, len, MEM_Ephem);
+}
+
+void
+mem_set_static_string(struct Mem *mem, char *value, uint32_t len)
+{
+	mem_set_string(mem, value, len, MEM_Static);
+}
+
+void
+mem_set_dynamic_string(struct Mem *mem, char *value, uint32_t len)
+{
+	mem_set_string(mem, value, len, MEM_Dyn);
+	mem->xDel = sql_free;
+}
+
+void
+mem_set_ephemeral_string0(struct Mem *mem, char *value)
+{
+	mem_set_string(mem, value, strlen(value), MEM_Ephem);
+	mem->flags |= MEM_Term;
+}
+
+void
+mem_set_static_string0(struct Mem *mem, char *value)
+{
+	mem_set_string(mem, value, strlen(value), MEM_Static);
+	mem->flags |= MEM_Term;
+}
+
+void
+mem_set_dynamic_string0(struct Mem *mem, char *value)
+{
+	mem_set_string(mem, value, strlen(value), MEM_Dyn);
+	mem->xDel = sql_free;
+	mem->flags |= MEM_Term;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -2030,20 +2081,6 @@ sqlVdbeMemSetZeroBlob(Mem * pMem, int n)
 }
 
 /*
- * Change the string value of an sql_value object
- */
-void
-sqlValueSetStr(sql_value * v,	/* Value to be set */
-		   int n,	/* Length of string z */
-		   const void *z,	/* Text of the new string */
-		   void (*xDel) (void *)	/* Destructor for the string */
-    )
-{
-	if (v)
-		sqlVdbeMemSetStr((Mem *) v, z, n, 1, xDel);
-}
-
-/*
  * Free an sql_value object
  */
 void
@@ -2787,13 +2824,9 @@ vdbe_decode_msgpack_into_ephemeral_mem(const char *buf, struct Mem *mem,
 		break;
 	}
 	case MP_STR: {
-		/* XXX u32->int */
-		mem->n = (int) mp_decode_strl(&buf);
-		mem->flags = MEM_Str | MEM_Ephem;
-		mem->field_type = FIELD_TYPE_STRING;
-install_blob:
-		mem->z = (char *)buf;
-		buf += mem->n;
+		uint32_t len = mp_decode_strl(&buf);
+		mem_set_ephemeral_string(mem, (char *)buf, len);
+		buf += len;
 		break;
 	}
 	case MP_BIN: {
@@ -2801,7 +2834,9 @@ install_blob:
 		mem->n = (int) mp_decode_binl(&buf);
 		mem->flags = MEM_Blob | MEM_Ephem;
 		mem->field_type = FIELD_TYPE_VARBINARY;
-		goto install_blob;
+		mem->z = (char *)buf;
+		buf += mem->n;
+		break;
 	}
 	case MP_FLOAT: {
 		mem->u.r = mp_decode_float(&buf);

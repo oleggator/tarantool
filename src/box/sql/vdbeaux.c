@@ -1295,10 +1295,8 @@ sqlVdbeList(Vdbe * p)
 
 			pMem++;
 
-			pMem->flags = MEM_Static | MEM_Str | MEM_Term;
-			pMem->z = (char *)sqlOpcodeName(pOp->opcode);	/* Opcode */
-			assert(pMem->z != 0);
-			pMem->n = sqlStrlen30(pMem->z);
+			char *value = (char *)sqlOpcodeName(pOp->opcode);
+			mem_set_static_string0(pMem, value);
 			pMem++;
 
 			/* When an OP_Program opcode is encounter (the only opcode that has
