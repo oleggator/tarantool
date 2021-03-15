@@ -1896,16 +1896,6 @@ mem_set_ptr(struct Mem *mem, void *ptr)
 }
 
 void
-mem_set_i64(struct Mem *mem, int64_t value)
-{
-	mem_clear(mem);
-	mem->u.i = value;
-	int flag = value < 0 ? MEM_Int : MEM_UInt;
-	MemSetTypeFlag(mem, flag);
-	mem->field_type = FIELD_TYPE_INTEGER;
-}
-
-void
 mem_set_u64(struct Mem *mem, uint64_t value)
 {
 	mem_clear(mem);

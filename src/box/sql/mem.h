@@ -407,13 +407,6 @@ mem_set_bool(struct Mem *mem, bool value);
 void
 mem_set_ptr(struct Mem *mem, void *ptr);
 
-/**
- * Set integer value. Depending on its sign MEM_Int (in case
- * of negative value) or MEM_UInt flag is set.
- */
-void
-mem_set_i64(struct Mem *mem, int64_t value);
-
 /** Set unsigned value and MEM_UInt flag. */
 void
 mem_set_u64(struct Mem *mem, uint64_t value);
