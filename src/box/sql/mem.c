@@ -257,6 +257,12 @@ mem_destroy(struct Mem *mem)
 	mem->zMalloc = NULL;
 }
 
+void
+mem_set_null(struct Mem *mem)
+{
+	mem_clear(mem);
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -323,7 +329,7 @@ int
 mem_concat(struct Mem *left, struct Mem *right, struct Mem *result)
 {
 	assert(result != right);
-	sqlVdbeMemSetNull(result);
+	mem_clear(result);
 	result->field_type = field_type_MAX;
 
 	if (((left->flags | right->flags) & MEM_Null) != 0) {
@@ -374,7 +380,7 @@ int
 mem_arithmetic(const struct Mem *left, const struct Mem *right,
 	       struct Mem *result, int op)
 {
-	sqlVdbeMemSetNull(result);
+	mem_clear(result);
 	result->field_type = FIELD_TYPE_NUMBER;
 	if (((left->flags | right->flags) & MEM_Null) != 0)
 		return 0;
@@ -559,7 +565,7 @@ mem_arithmetic(const struct Mem *left, const struct Mem *right,
 int
 mem_bitwise(struct Mem *left, struct Mem *right, struct Mem *result, int op)
 {
-	sqlVdbeMemSetNull(result);
+	mem_clear(result);
 	result->field_type = FIELD_TYPE_INTEGER;
 	if (((left->flags | right->flags) & MEM_Null) != 0)
 		return 0;
@@ -2034,24 +2040,6 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 }
 
 /*
- * Delete any previous value and set the value stored in *pMem to NULL.
- *
- * This routine calls the Mem.xDel destructor to dispose of values that
- * require the destructor.  But it preserves the Mem.zMalloc memory allocation.
- * To free all resources, use mem_destroy(), which both calls this
- * routine to invoke the destructor and deallocates Mem.zMalloc.
- *
- * Use this routine to reset the Mem prior to insert a new value.
- *
- * Use mem_destroy() to complete erase the Mem prior to abandoning it.
- */
-void
-sqlVdbeMemSetNull(Mem * pMem)
-{
-	mem_clear(pMem);
-}
-
-/*
  * Delete any previous value and set the value to be a BLOB of length
  * n containing all zeros.
  */
@@ -2079,12 +2067,6 @@ sqlValueSetStr(sql_value * v,	/* Value to be set */
 {
 	if (v)
 		sqlVdbeMemSetStr((Mem *) v, z, n, 1, xDel);
-}
-
-void
-sqlValueSetNull(sql_value * p)
-{
-	sqlVdbeMemSetNull((Mem *) p);
 }
 
 /*
