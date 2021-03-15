@@ -169,6 +169,9 @@ mem_create(struct Mem *mem);
 void
 mem_destroy(struct Mem *mem);
 
+void
+mem_set_null(struct Mem *mem);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -421,8 +424,6 @@ mem_set_double(struct Mem *mem, double value);
 
 int
 sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
-void
-sqlVdbeMemSetNull(struct Mem *);
 void
 sqlVdbeMemSetZeroBlob(struct Mem *, int);
 void sqlValueSetStr(struct Mem *, int, const void *,

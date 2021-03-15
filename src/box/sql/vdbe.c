@@ -244,7 +244,7 @@ vdbe_prepare_null_out(struct Vdbe *v, int n)
 	assert(n <= (v->nMem + 1 - v->nCursor));
 	struct Mem *out = &v->aMem[n];
 	memAboutToChange(v, out);
-	sqlVdbeMemSetNull(out);
+	mem_set_null(out);
 	out->field_type = field_type_MAX;
 	return out;
 }
@@ -839,7 +839,7 @@ case OP_Null: {           /* out2 */
 	while( cnt>0) {
 		pOut++;
 		memAboutToChange(p, pOut);
-		sqlVdbeMemSetNull(pOut);
+		mem_set_null(pOut);
 		pOut->flags = nullFlag;
 		pOut->field_type = field_type_MAX;
 		pOut->n = 0;

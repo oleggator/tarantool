@@ -290,7 +290,7 @@ port_lua_get_vdbemem(struct port *base, uint32_t *size)
 				goto error;
 			break;
 		case MP_NIL:
-			sqlVdbeMemSetNull(&val[i]);
+			mem_set_null(&val[i]);
 			break;
 		default:
 			diag_set(ClientError, ER_SQL_EXECUTE,
@@ -361,7 +361,7 @@ port_c_get_vdbemem(struct port *base, uint32_t *size)
 				goto error;
 			break;
 		case MP_NIL:
-			sqlVdbeMemSetNull(&val[i]);
+			mem_set_null(&val[i]);
 			break;
 		default:
 			diag_set(ClientError, ER_SQL_EXECUTE,

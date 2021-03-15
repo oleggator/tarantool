@@ -416,7 +416,7 @@ valueNew(sql * db, struct ValueNewStat4Ctx *p)
 // 	if (!pExpr) {
 // 		pVal = valueNew(db, pAlloc);
 // 		if (pVal) {
-// 			sqlVdbeMemSetNull((Mem *) pVal);
+// 			mem_set_null((Mem *) pVal);
 // 		}
 // 	} else if (pExpr->op == TK_VARIABLE
 // 		   || NEVER(pExpr->op == TK_REGISTER
