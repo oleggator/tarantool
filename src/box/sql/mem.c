@@ -83,29 +83,30 @@ mem_create(struct Mem *mem)
 #endif
 }
 
-static void
+static inline void
 mem_clear(struct Mem *mem)
 {
-	assert(VdbeMemDynamic(mem));
-	if ((mem->flags & MEM_Agg) != 0)
-		sql_vdbemem_finalize(mem, mem->u.func);
-	assert((mem->flags & MEM_Agg) == 0);
-	if ((mem->flags & MEM_Dyn) != 0) {
-		assert(mem->xDel != SQL_DYNAMIC && mem->xDel != NULL);
-		mem->xDel((void *)mem->z);
-	} else if ((mem->flags & MEM_Frame) != 0) {
-		struct VdbeFrame *frame = mem->u.pFrame;
-		frame->pParent = frame->v->pDelFrame;
-		frame->v->pDelFrame = frame;
+	if ((mem->flags & (MEM_Agg | MEM_Dyn | MEM_Frame)) != 0) {
+		if ((mem->flags & MEM_Agg) != 0)
+			sql_vdbemem_finalize(mem, mem->u.func);
+		assert((mem->flags & MEM_Agg) == 0);
+		if ((mem->flags & MEM_Dyn) != 0) {
+			assert(mem->xDel != SQL_DYNAMIC && mem->xDel != NULL);
+			mem->xDel((void *)mem->z);
+		} else if ((mem->flags & MEM_Frame) != 0) {
+			struct VdbeFrame *frame = mem->u.pFrame;
+			frame->pParent = frame->v->pDelFrame;
+			frame->v->pDelFrame = frame;
+		}
 	}
 	mem->flags = MEM_Null;
+	mem->field_type = field_type_MAX;
 }
 
 void
 mem_destroy(struct Mem *mem)
 {
-	if (VdbeMemDynamic(mem))
-		mem_clear(mem);
+	mem_clear(mem);
 	if (mem->szMalloc > 0)
 		sqlDbFree(mem->db, mem->zMalloc);
 	mem->n = 0;
@@ -1123,7 +1124,7 @@ sqlVdbeMemGrow(Mem * pMem, int n, int bPreserve)
 			pMem->zMalloc = sqlDbMallocRaw(pMem->db, n);
 		}
 		if (pMem->zMalloc == 0) {
-			sqlVdbeMemSetNull(pMem);
+			mem_clear(pMem);
 			pMem->z = 0;
 			pMem->szMalloc = 0;
 			return -1;
@@ -1175,7 +1176,7 @@ sqlVdbeMemClearAndResize(Mem * pMem, int szNew)
 void
 mem_set_bool(struct Mem *mem, bool value)
 {
-	sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.b = value;
 	mem->flags = MEM_Bool;
 	mem->field_type = FIELD_TYPE_BOOLEAN;
@@ -1192,8 +1193,7 @@ mem_set_ptr(struct Mem *mem, void *ptr)
 void
 mem_set_i64(struct Mem *mem, int64_t value)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.i = value;
 	int flag = value < 0 ? MEM_Int : MEM_UInt;
 	MemSetTypeFlag(mem, flag);
@@ -1203,8 +1203,7 @@ mem_set_i64(struct Mem *mem, int64_t value)
 void
 mem_set_u64(struct Mem *mem, uint64_t value)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	mem->u.u = value;
 	MemSetTypeFlag(mem, MEM_UInt);
 	mem->field_type = FIELD_TYPE_UNSIGNED;
@@ -1213,8 +1212,7 @@ mem_set_u64(struct Mem *mem, uint64_t value)
 void
 mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
 {
-	if (VdbeMemDynamic(mem))
-		sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	if (is_neg) {
 		assert(value < 0);
 		mem->u.i = value;
@@ -1229,7 +1227,7 @@ mem_set_int(struct Mem *mem, int64_t value, bool is_neg)
 void
 mem_set_double(struct Mem *mem, double value)
 {
-	sqlVdbeMemSetNull(mem);
+	mem_clear(mem);
 	if (sqlIsNaN(value))
 		return;
 	mem->u.r = value;
@@ -1266,7 +1264,7 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 
 	/* If z is a NULL pointer, set pMem to contain an SQL NULL. */
 	if (!z) {
-		sqlVdbeMemSetNull(pMem);
+		mem_clear(pMem);
 		return 0;
 	}
 
@@ -1348,11 +1346,7 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 void
 sqlVdbeMemSetNull(Mem * pMem)
 {
-	if (VdbeMemDynamic(pMem)) {
-		mem_clear(pMem);
-	} else {
-		pMem->flags = MEM_Null;
-	}
+	mem_clear(pMem);
 }
 
 /*
@@ -1879,8 +1873,7 @@ sqlVdbeMemCopy(Mem * pTo, const Mem * pFrom)
 {
 	int rc = 0;
 
-	if (VdbeMemDynamic(pTo))
-		mem_clear(pTo);
+	mem_clear(pTo);
 	memcpy(pTo, pFrom, MEMCELLSIZE);
 	pTo->flags &= ~MEM_Dyn;
 	if (pTo->flags & (MEM_Str | MEM_Blob)) {
