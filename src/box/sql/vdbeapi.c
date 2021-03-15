@@ -125,6 +125,20 @@ setResultStrOrError(sql_context * pCtx,	/* Function context */
 		    void (*xDel) (void *)	/* Destructor function */
     )
 {
+	if (xDel == SQL_STATIC) {
+		if (n < 0)
+			mem_set_static_string0(pCtx->pOut, (char *)z);
+		else
+			mem_set_static_string(pCtx->pOut, (char *)z, n);
+		return;
+	}
+	if (xDel == SQL_DYNAMIC) {
+		if (n < 0)
+			mem_set_allocated_string0(pCtx->pOut, (char *)z);
+		else
+			mem_set_allocated_string(pCtx->pOut, (char *)z, n);
+		return;
+	}
 	if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 1, xDel) != 0)
 		pCtx->is_aborted = true;
 }
@@ -762,8 +776,19 @@ bindText(sql_stmt * pStmt,	/* The statement to bind against */
 	if (zData == NULL)
 		return 0;
 	pVar = &p->aVar[i - 1];
-	if (sqlVdbeMemSetStr(pVar, zData, nData, 1, xDel) != 0)
+	if (xDel == SQL_STATIC) {
+		if (nData < 0)
+			mem_set_static_string0(pVar, (char *)zData);
+		else
+			mem_set_static_string(pVar, (char *)zData, nData);
+	} else if (xDel == SQL_DYNAMIC) {
+		if (nData < 0)
+			mem_set_allocated_string0(pVar, (char *)zData);
+		else
+			mem_set_allocated_string(pVar, (char *)zData, nData);
+	} else if (sqlVdbeMemSetStr(pVar, zData, nData, 1, xDel) != 0) {
 		return -1;
+	}
 	return sql_bind_type(p, i, "text");
 }
 
@@ -874,14 +899,6 @@ sql_bind_ptr(struct sql_stmt *stmt, int i, void *ptr)
 		mem_set_ptr(&p->aVar[i - 1], ptr);
 	}
 	return rc;
-}
-
-int
-sql_bind_text(sql_stmt * pStmt,
-		  int i, const char *zData, int nData, void (*xDel) (void *)
-    )
-{
-	return bindText(pStmt, i, zData, nData, xDel);
 }
 
 int

@@ -198,6 +198,9 @@ void
 mem_set_dynamic_string(struct Mem *mem, char *value, uint32_t len);
 
 void
+mem_set_allocated_string(struct Mem *mem, char *value, uint32_t len);
+
+void
 mem_set_ephemeral_string0(struct Mem *mem, char *value);
 
 void
@@ -205,6 +208,9 @@ mem_set_static_string0(struct Mem *mem, char *value);
 
 void
 mem_set_dynamic_string0(struct Mem *mem, char *value);
+
+void
+mem_set_allocated_string0(struct Mem *mem, char *value);
 
 int
 mem_copy(struct Mem *to, const struct Mem *from);

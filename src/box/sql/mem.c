@@ -303,6 +303,7 @@ mem_set_string(struct Mem *mem, char *value, uint32_t len, int alloc_type)
 	mem->n = len;
 	mem->flags = MEM_Str | alloc_type;
 	mem->field_type = FIELD_TYPE_STRING;
+	mem->xDel = alloc_type == MEM_Dyn ? sql_free : NULL;
 }
 
 void
@@ -321,7 +322,19 @@ void
 mem_set_dynamic_string(struct Mem *mem, char *value, uint32_t len)
 {
 	mem_set_string(mem, value, len, MEM_Dyn);
-	mem->xDel = sql_free;
+}
+
+void
+mem_set_allocated_string(struct Mem *mem, char *value, uint32_t len)
+{
+	assert(value != mem->zMalloc);
+	mem_destroy(mem);
+	mem->z = value;
+	mem->n = len;
+	mem->flags = MEM_Str;
+	mem->field_type = FIELD_TYPE_STRING;
+	mem->zMalloc = mem->z;
+	mem->szMalloc = sqlDbMallocSize(mem->db, mem->zMalloc);
 }
 
 void
@@ -342,8 +355,20 @@ void
 mem_set_dynamic_string0(struct Mem *mem, char *value)
 {
 	mem_set_string(mem, value, strlen(value), MEM_Dyn);
-	mem->xDel = sql_free;
 	mem->flags |= MEM_Term;
+}
+
+void
+mem_set_allocated_string0(struct Mem *mem, char *value)
+{
+	assert(value != mem->zMalloc);
+	mem_destroy(mem);
+	mem->z = value;
+	mem->n = strlen(value);
+	mem->flags = MEM_Str | MEM_Term;
+	mem->field_type = FIELD_TYPE_STRING;
+	mem->zMalloc = mem->z;
+	mem->szMalloc = sqlDbMallocSize(mem->db, mem->zMalloc);
 }
 
 int
