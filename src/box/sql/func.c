@@ -269,7 +269,7 @@ port_lua_get_vdbemem(struct port *base, uint32_t *size)
 		}
 		switch (field.type) {
 		case MP_BOOL:
-			mem_set_bool(&val[i], field.bval);
+			mem_set_boolean(&val[i], field.bval);
 			break;
 		case MP_FLOAT:
 			mem_set_double(&val[i], field.fval);
@@ -340,7 +340,7 @@ port_c_get_vdbemem(struct port *base, uint32_t *size)
 		const char *str;
 		switch (mp_typeof(*data)) {
 		case MP_BOOL:
-			mem_set_bool(&val[i], mp_decode_bool(&data));
+			mem_set_boolean(&val[i], mp_decode_bool(&data));
 			break;
 		case MP_FLOAT:
 			mem_set_double(&val[i], mp_decode_float(&data));

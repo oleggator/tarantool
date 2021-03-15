@@ -195,7 +195,7 @@ sql_result_int(sql_context *ctx, int64_t val)
 void
 sql_result_bool(struct sql_context *ctx, bool value)
 {
-	mem_set_bool(ctx->pOut, value);
+	mem_set_boolean(ctx->pOut, value);
 }
 
 void
@@ -822,7 +822,7 @@ sql_bind_boolean(struct sql_stmt *stmt, int i, bool value)
 	if (vdbeUnbind(p, i) != 0)
 		return -1;
 	int rc = sql_bind_type(p, i, "boolean");
-	mem_set_bool(&p->aVar[i - 1], value);
+	mem_set_boolean(&p->aVar[i - 1], value);
 	return rc;
 }
 
