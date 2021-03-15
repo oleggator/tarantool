@@ -185,6 +185,9 @@ mem_set_unsigned(struct Mem *mem, uint64_t value);
 void
 mem_set_boolean(struct Mem *mem, bool value);
 
+void
+mem_set_double(struct Mem *mem, double value);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -409,10 +412,6 @@ int sqlVdbeMemClearAndResize(struct Mem * pMem, int n);
  */
 void
 mem_set_ptr(struct Mem *mem, void *ptr);
-
-/** Set double value and MEM_Real flag. */
-void
-mem_set_double(struct Mem *mem, double value);
 
 int
 sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
