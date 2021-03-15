@@ -213,6 +213,12 @@ void
 mem_set_allocated_string0(struct Mem *mem, char *value);
 
 int
+mem_copy_string(struct Mem *mem, const char *value, uint32_t len);
+
+int
+mem_copy_string0(struct Mem *mem, const char *value);
+
+int
 mem_copy(struct Mem *to, const struct Mem *from);
 
 int

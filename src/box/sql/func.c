@@ -284,9 +284,8 @@ port_lua_get_vdbemem(struct port *base, uint32_t *size)
 			mem_set_unsigned(&val[i], field.ival);
 			break;
 		case MP_STR:
-			if (sqlVdbeMemSetStr(&val[i], field.sval.data,
-					     field.sval.len, 1,
-					     SQL_TRANSIENT) != 0)
+			if (mem_copy_string(&val[i], field.sval.data,
+					    field.sval.len) != 0)
 				goto error;
 			break;
 		case MP_NIL:
@@ -356,8 +355,7 @@ port_c_get_vdbemem(struct port *base, uint32_t *size)
 			break;
 		case MP_STR:
 			str = mp_decode_str(&data, &len);
-			if (sqlVdbeMemSetStr(&val[i], str, len,
-					     1, SQL_TRANSIENT) != 0)
+			if (mem_copy_string(&val[i], str, len) != 0)
 				goto error;
 			break;
 		case MP_NIL:

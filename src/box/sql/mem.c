@@ -379,6 +379,32 @@ mem_set_allocated_string0(struct Mem *mem, char *value)
 }
 
 int
+mem_copy_string(struct Mem *mem, const char *value, uint32_t len)
+{
+	bool is_own_value = (mem->flags & (MEM_Str | MEM_Blob)) != 0 &&
+			    mem->z == value;
+	if (sqlVdbeMemGrow(mem, len, is_own_value) != 0)
+		return -1;
+	if (!is_own_value)
+		memcpy(mem->z, value, len);
+	mem->n = len;
+	mem->flags = MEM_Str;
+	mem->field_type = FIELD_TYPE_STRING;
+	return 0;
+}
+
+int
+mem_copy_string0(struct Mem *mem, const char *value)
+{
+	uint32_t len = strlen(value);
+	if (mem_copy_string(mem, value, len + 1) != 0)
+		return -1;
+	mem->n = len;
+	mem->flags |= MEM_Term;
+	return 0;
+}
+
+int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
 	if (VdbeMemDynamic(to))
@@ -1577,8 +1603,8 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 		assert(MEM_Str == (MEM_Blob >> 3));
 		if ((pMem->flags & MEM_Bool) != 0) {
 			const char *str_bool = SQL_TOKEN_BOOLEAN(pMem->u.b);
-			sqlVdbeMemSetStr(pMem, str_bool, strlen(str_bool), 1,
-					 SQL_TRANSIENT);
+			if (mem_copy_string0(pMem, str_bool) != 0)
+				return -1;
 			return 0;
 		}
 		pMem->flags |= (pMem->flags & MEM_Blob) >> 3;
