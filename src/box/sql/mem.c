@@ -604,6 +604,15 @@ mem_set_pointer(struct Mem *mem, void *ptr)
 	mem->field_type = field_type_MAX;
 }
 
+void
+mem_set_frame(struct Mem *mem, struct VdbeFrame *frame)
+{
+	mem_clear(mem);
+	mem->flags = MEM_Frame;
+	mem->u.pFrame = frame;
+	mem->field_type = field_type_MAX;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
