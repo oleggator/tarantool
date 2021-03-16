@@ -597,7 +597,7 @@ case OP_Return: {           /* in1 */
 	pIn1 = &aMem[pOp->p1];
 	assert(mem_is_unsigned(pIn1));
 	pOp = &aOp[pIn1->u.u];
-	pIn1->flags = MEM_Undefined;
+	mem_set_undefined(pIn1);
 	break;
 }
 
@@ -640,7 +640,7 @@ case OP_EndCoroutine: {           /* in1 */
 	assert(pCaller->opcode==OP_Yield);
 	assert(pCaller->p2>=0 && pCaller->p2<p->nOp);
 	pOp = &aOp[pCaller->p2 - 1];
-	pIn1->flags = MEM_Undefined;
+	mem_set_undefined(pIn1);
 	break;
 }
 
@@ -4091,8 +4091,8 @@ case OP_Program: {        /* jump */
 
 		pEnd = &VdbeFrameMem(pFrame)[pFrame->nChildMem];
 		for(pMem=VdbeFrameMem(pFrame); pMem!=pEnd; pMem++) {
-			pMem->flags = MEM_Undefined;
-			pMem->db = db;
+			mem_create(pMem);
+			mem_set_undefined(pMem);
 		}
 	} else {
 		pFrame = pRt->u.pFrame;
