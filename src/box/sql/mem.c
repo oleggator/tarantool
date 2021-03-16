@@ -586,6 +586,7 @@ void
 mem_set_undefined(struct Mem *mem)
 {
 	mem->flags = MEM_Undefined;
+	mem->field_type = field_type_MAX;
 }
 
 int
