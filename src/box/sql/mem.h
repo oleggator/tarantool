@@ -236,6 +236,30 @@ mem_copy_binary(struct Mem *mem, const char *value, uint32_t size);
 int
 mem_append_to_binary(struct Mem *mem, const char *value, uint32_t size);
 
+void
+mem_set_ephemeral_map(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_static_map(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_dynamic_map(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_allocated_map(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_ephemeral_array(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_static_array(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_dynamic_array(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_allocated_array(struct Mem *mem, char *value, uint32_t size);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
