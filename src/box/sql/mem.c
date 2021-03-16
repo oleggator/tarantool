@@ -493,6 +493,22 @@ mem_set_zerobinary(struct Mem *mem, int n)
 }
 
 int
+mem_append_to_binary(struct Mem *mem, const char *value, uint32_t size)
+{
+	if ((mem->flags & MEM_Blob) == 0) {
+		diag_set(ClientError, ER_INCONSISTENT_TYPES, "varbinary",
+			 mem_type_to_str(mem));
+		return -1;
+	}
+	assert(mem->field_type == FIELD_TYPE_VARBINARY);
+	if (sqlVdbeMemGrow(mem, mem->n + size, 1) != 0)
+		return -1;
+	memcpy(&mem->z[mem->n], value, size);
+	mem->n += size;
+	return 0;
+}
+
+int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
 	mem_clear(to);

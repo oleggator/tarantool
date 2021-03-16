@@ -236,6 +236,9 @@ int
 mem_copy_binary(struct Mem *mem, const char *value, uint32_t size);
 
 int
+mem_append_to_binary(struct Mem *mem, const char *value, uint32_t size);
+
+int
 mem_copy(struct Mem *to, const struct Mem *from);
 
 /**
