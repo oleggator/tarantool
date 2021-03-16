@@ -460,6 +460,20 @@ mem_set_allocated_binary(struct Mem *mem, char *value, uint32_t size)
 }
 
 int
+mem_copy_binary(struct Mem *mem, const char *value, uint32_t size)
+{
+	bool is_own_value = (mem->flags & MEM_Blob) != 0 && mem->z == value;
+	if (sqlVdbeMemGrow(mem, size, is_own_value) != 0)
+		return -1;
+	if (!is_own_value)
+		memcpy(mem->z, value, size);
+	mem->n = size;
+	mem->flags = MEM_Blob;
+	mem->field_type = FIELD_TYPE_VARBINARY;
+	return 0;
+}
+
+int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
 	if (VdbeMemDynamic(to))
