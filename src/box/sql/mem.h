@@ -265,6 +265,9 @@ mem_set_allocated_array(struct Mem *mem, char *value, uint32_t size);
 void
 mem_set_undefined(struct Mem *mem);
 
+void
+mem_set_pointer(struct Mem *mem, void *ptr);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -491,14 +494,6 @@ mem_convert_to_numeric(struct Mem *mem, enum field_type type);
 
 int sqlVdbeMemGrow(struct Mem * pMem, int n, int preserve);
 int sqlVdbeMemClearAndResize(struct Mem * pMem, int n);
-
-/**
- * Set VDBE memory register with given pointer as a data.
- * @param mem VDBE memory register to update.
- * @param ptr Pointer to use.
- */
-void
-mem_set_ptr(struct Mem *mem, void *ptr);
 
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
