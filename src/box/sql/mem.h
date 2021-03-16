@@ -218,6 +218,18 @@ mem_copy_string(struct Mem *mem, const char *value, uint32_t len);
 int
 mem_copy_string0(struct Mem *mem, const char *value);
 
+void
+mem_set_ephemeral_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_static_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_dynamic_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_allocated_binary(struct Mem *mem, char *value, uint32_t size);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
