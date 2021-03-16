@@ -2999,8 +2999,8 @@ case OP_FCopy: {     /* out2 */
 		assert(mem_is_integer(pIn1));
 
 		pOut = vdbe_prepare_null_out(p, pOp->p2);
-		mem_set_integer(pOut, pIn1->u.i, pIn1->flags == MEM_Int);
-		pOut->field_type = pIn1->field_type;
+		if (mem_copy(pOut, pIn1) != 0)
+			goto abort_due_to_error;
 	}
 	break;
 }
