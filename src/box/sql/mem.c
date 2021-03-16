@@ -508,6 +508,7 @@ mem_set_ephemeral_map(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_MAP);
 	mem_set_const_bin(mem, value, size, MEM_Ephem);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_MAP;
 }
 
@@ -517,6 +518,7 @@ mem_set_static_map(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_MAP);
 	mem_set_const_bin(mem, value, size, MEM_Static);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_MAP;
 }
 
@@ -526,6 +528,7 @@ mem_set_dynamic_map(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_MAP);
 	mem_set_dyn_bin(mem, value, size, MEM_Dyn);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_MAP;
 }
 
@@ -535,6 +538,7 @@ mem_set_allocated_map(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_MAP);
 	mem_set_dyn_bin(mem, value, size, 0);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_MAP;
 }
 
@@ -544,6 +548,7 @@ mem_set_ephemeral_array(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_ARRAY);
 	mem_set_const_bin(mem, value, size, MEM_Ephem);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_ARRAY;
 }
 
@@ -553,6 +558,7 @@ mem_set_static_array(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_ARRAY);
 	mem_set_const_bin(mem, value, size, MEM_Static);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_ARRAY;
 }
 
@@ -562,6 +568,7 @@ mem_set_dynamic_array(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_ARRAY);
 	mem_set_dyn_bin(mem, value, size, MEM_Dyn);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_ARRAY;
 }
 
@@ -571,6 +578,7 @@ mem_set_allocated_array(struct Mem *mem, char *value, uint32_t size)
 	assert(mp_typeof(*value) == MP_ARRAY);
 	mem_set_dyn_bin(mem, value, size, 0);
 	mem->flags |= MEM_Subtype;
+	mem->subtype = SQL_SUBTYPE_MSGPACK;
 	mem->field_type = FIELD_TYPE_ARRAY;
 }
 
