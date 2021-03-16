@@ -217,6 +217,18 @@ mem_copy_string(struct Mem *mem, const char *value, uint32_t len);
 int
 mem_copy_string0(struct Mem *mem, const char *value);
 
+void
+mem_set_ephemeral_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_static_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_dynamic_binary(struct Mem *mem, char *value, uint32_t size);
+
+void
+mem_set_allocated_binary(struct Mem *mem, char *value, uint32_t size);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
@@ -533,9 +545,6 @@ bool
 mem_is_type_compatible(struct Mem *mem, enum field_type type);
 
 /** MEM manipulate functions. */
-
-int
-vdbe_mem_alloc_blob_region(struct Mem *vdbe_mem, uint32_t size);
 
 /**
  * Memory cell mem contains the context of an aggregate function.
