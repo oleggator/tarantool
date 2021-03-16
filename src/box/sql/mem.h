@@ -230,6 +230,9 @@ void
 mem_set_allocated_binary(struct Mem *mem, char *value, uint32_t size);
 
 int
+mem_copy_binary(struct Mem *mem, const char *value, uint32_t size);
+
+int
 mem_copy(struct Mem *to, const struct Mem *from);
 
 /**

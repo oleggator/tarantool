@@ -188,7 +188,7 @@ sql_result_blob(sql_context * pCtx,
 		mem_set_allocated_binary(pCtx->pOut, (char *)z, n);
 	else if (xDel != SQL_TRANSIENT)
 		mem_set_dynamic_binary(pCtx->pOut, (char *)z, n);
-	else if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 0, xDel) != 0)
+	else if (mem_copy_binary(pCtx->pOut, z, n) != 0)
 		pCtx->is_aborted = true;
 }
 
@@ -843,7 +843,7 @@ sql_bind_blob(sql_stmt * pStmt,
 		mem_set_allocated_binary(var, (char *)zData, nData);
 	else if (xDel != SQL_TRANSIENT)
 		mem_set_dynamic_binary(var, (char *)zData, nData);
-	else if (sqlVdbeMemSetStr(var, zData, nData, 0, xDel) != 0)
+	else if (mem_copy_binary(var, zData, nData) != 0)
 		return -1;
 	return sql_bind_type(p, i, "varbinary");
 }
