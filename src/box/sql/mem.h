@@ -272,6 +272,12 @@ void
 mem_set_frame(struct Mem *mem, struct VdbeFrame *frame);
 
 int
+mem_prepare_aggregate(struct Mem *mem, struct func *func, int size);
+
+void *
+mem_get_aggregate(struct Mem *mem);
+
+int
 mem_copy(struct Mem *to, const struct Mem *from);
 
 /**
