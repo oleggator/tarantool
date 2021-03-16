@@ -862,9 +862,11 @@ case OP_Blob: {                /* out2 */
 		 */
 		mem_set_static_binary(pOut, pOp->p4.z, pOp->p1);
 	} else {
-		sqlVdbeMemSetStr(pOut, pOp->p4.z, pOp->p1, 0, 0);
-		pOut->flags |= MEM_Subtype;
-		pOut->subtype = pOp->p3;
+		assert(pOp->p3 == SQL_SUBTYPE_MSGPACK);
+		if (mp_typeof(*pOp->p4.z) == MP_MAP)
+			mem_set_static_map(pOut, pOp->p4.z, pOp->p1);
+		else
+			mem_set_static_array(pOut, pOp->p4.z, pOp->p1);
 	}
 	UPDATE_MAX_BLOBSIZE(pOut);
 	break;
