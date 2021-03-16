@@ -823,7 +823,7 @@ case OP_String: {          /* out2 */
  * is less than P2 (typically P3 is zero) then only register P2 is
  * set to NULL.
  *
- * If the P1 value is non-zero, then also set the MEM_Cleared flag so that
+ * If the P1 value is non-zero, then also set the Cleared flag so that
  * NULL values will not compare equal even if SQL_NULLEQ is set on
  * OP_Ne or OP_Eq.
  */
@@ -833,13 +833,14 @@ case OP_Null: {           /* out2 */
 	cnt = pOp->p3-pOp->p2;
 	assert(pOp->p3<=(p->nMem+1 - p->nCursor));
 	if (pOp->p1 != 0)
-		pOut->flags = MEM_Null|MEM_Cleared;
+		mem_set_cleared(pOut);
 	while( cnt>0) {
 		pOut++;
 		memAboutToChange(p, pOut);
-		mem_set_null(pOut);
 		if (pOp->p1 != 0)
-			pOut->flags = MEM_Null|MEM_Cleared;
+			mem_set_cleared(pOut);
+		else
+			mem_set_null(pOut);
 		cnt--;
 	}
 	break;
