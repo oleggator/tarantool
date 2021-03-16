@@ -1437,21 +1437,6 @@ sqlValueNew(sql * db)
 }
 
 void
-initMemArray(Mem * p, int N, sql * db, u32 flags)
-{
-	while ((N--) > 0) {
-		p->db = db;
-		p->flags = flags;
-		p->szMalloc = 0;
-		p->field_type = field_type_MAX;
-#ifdef SQL_DEBUG
-		p->pScopyFrom = 0;
-#endif
-		p++;
-	}
-}
-
-void
 releaseMemArray(Mem * p, int N)
 {
 	if (p && N) {

@@ -337,12 +337,6 @@ void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 
 /*
- * Initialize an array of N Mem element.
- */
-void
-initMemArray(Mem * p, int N, sql * db, u32 flags);
-
-/*
  * Release an array of N Mem elements
  */
 void
