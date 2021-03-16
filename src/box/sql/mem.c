@@ -2658,18 +2658,6 @@ mem_is_type_compatible(struct Mem *mem, enum field_type type)
 	return field_mp_plain_type_is_compatible(type, mp_type, true);
 }
 
-/* Allocate memory for internal VDBE structure on region. */
-int
-vdbe_mem_alloc_blob_region(struct Mem *vdbe_mem, uint32_t size)
-{
-	char *buf = region_alloc(&fiber()->gc, size);
-	if (buf == NULL)
-		return -1;
-	mem_set_ephemeral_binary(vdbe_mem, buf, size);
-	assert(sqlVdbeCheckMemInvariants(vdbe_mem));
-	return 0;
-}
-
 int
 sql_vdbemem_finalize(struct Mem *mem, struct func *func)
 {

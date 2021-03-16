@@ -3201,9 +3201,14 @@ case OP_RowData: {
 	}
 	testcase( n==0);
 
-	if (vdbe_mem_alloc_blob_region(pOut, n) != 0)
+	char *buf = region_alloc(&fiber()->gc, n);
+	if (buf == NULL) {
+		diag_set(OutOfMemory, n, "region_alloc", "buf");
 		goto abort_due_to_error;
-	sqlCursorPayload(pCrsr, 0, n, pOut->z);
+	}
+	sqlCursorPayload(pCrsr, 0, n, buf);
+	mem_set_ephemeral_binary(pOut, buf, n);
+	assert(sqlVdbeCheckMemInvariants(pOut));
 	UPDATE_MAX_BLOBSIZE(pOut);
 	REGISTER_TRACE(p, pOp->p2, pOut);
 	break;

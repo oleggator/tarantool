@@ -555,9 +555,6 @@ mem_is_type_compatible(struct Mem *mem, enum field_type type);
 
 /** MEM manipulate functions. */
 
-int
-vdbe_mem_alloc_blob_region(struct Mem *vdbe_mem, uint32_t size);
-
 /**
  * Memory cell mem contains the context of an aggregate function.
  * This routine calls the finalize method for that function. The
