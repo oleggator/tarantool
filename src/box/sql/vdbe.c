@@ -4070,8 +4070,7 @@ case OP_Program: {        /* jump */
 			goto no_mem;
 		}
 		mem_destroy(pRt);
-		pRt->flags = MEM_Frame;
-		pRt->u.pFrame = pFrame;
+		mem_set_frame(pRt, pFrame);
 
 		pFrame->v = p;
 		pFrame->nChildMem = nMem;

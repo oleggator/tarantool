@@ -266,6 +266,9 @@ mem_set_undefined(struct Mem *mem);
 void
 mem_set_pointer(struct Mem *mem, void *ptr);
 
+void
+mem_set_frame(struct Mem *mem, struct VdbeFrame *frame);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
