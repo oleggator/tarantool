@@ -930,7 +930,7 @@ sql_bind_ptr(struct sql_stmt *stmt, int i, void *ptr)
 	int rc = vdbeUnbind(p, i);
 	if (rc == 0) {
 		rc = sql_bind_type(p, i, "varbinary");
-		mem_set_ptr(&p->aVar[i - 1], ptr);
+		mem_set_pointer(&p->aVar[i - 1], ptr);
 	}
 	return rc;
 }
