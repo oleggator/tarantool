@@ -1305,19 +1305,26 @@ sqlVdbeList(Vdbe * p)
 			 * has not already been seen.
 			 */
 			if (pOp->p4type == P4_SUBPROGRAM) {
-				int nByte = (nSub + 1) * sizeof(SubProgram *);
 				int j;
 				for (j = 0; j < nSub; j++) {
 					if (apSub[j] == pOp->p4.pProgram)
 						break;
 				}
-				if (j == nSub &&
-				    sqlVdbeMemGrow(pSub, nByte,
-						   nSub != 0) == 0) {
-					apSub = (SubProgram **) pSub->z;
-					apSub[nSub++] = pOp->p4.pProgram;
-					pSub->flags |= MEM_Blob;
-					pSub->n = nSub * sizeof(SubProgram *);
+				if (j == nSub) {
+					uint32_t size = sizeof(SubProgram *);
+					char *value = (char *)&pOp->p4.pProgram;
+					if (nSub == 0) {
+						if (mem_copy_binary(pSub, value,
+								    size) != 0)
+							return -1;
+					} else {
+						assert(0);
+						if (mem_append_to_binary(pSub,
+									 value,
+									 size) != 0)
+							return -1;
+					}
+					++nSub;
 				}
 			}
 		}
