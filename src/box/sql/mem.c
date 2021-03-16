@@ -630,6 +630,13 @@ mem_get_aggregate(struct Mem *mem)
 	return (void *)mem->z;
 }
 
+void
+mem_set_cleared(struct Mem *mem)
+{
+	mem_clear(mem);
+	mem->flags = MEM_Null | MEM_Cleared;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
