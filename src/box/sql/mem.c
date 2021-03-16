@@ -582,6 +582,12 @@ mem_set_allocated_array(struct Mem *mem, char *value, uint32_t size)
 	mem->field_type = FIELD_TYPE_ARRAY;
 }
 
+void
+mem_set_undefined(struct Mem *mem)
+{
+	mem->flags = MEM_Undefined;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {

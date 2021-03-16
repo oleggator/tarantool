@@ -260,6 +260,9 @@ mem_set_dynamic_array(struct Mem *mem, char *value, uint32_t size);
 void
 mem_set_allocated_array(struct Mem *mem, char *value, uint32_t size);
 
+void
+mem_set_undefined(struct Mem *mem);
+
 int
 mem_copy(struct Mem *to, const struct Mem *from);
 
