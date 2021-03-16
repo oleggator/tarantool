@@ -111,9 +111,8 @@ sql_metadata_is_full()
  * The following routines are used by user-defined functions to specify
  * the function result.
  *
- * The setStrOrError() function calls sqlVdbeMemSetStr() to store the
- * result as a string or blob but if the string or blob is too large, it
- * then sets the error code.
+ * The setStrOrError() function sets the result as a string or blob but
+ * if the string or blob is too large, it then sets the error code.
  *
  * The invokeValueDestructor(P,X) routine invokes destructor function X()
  * on value P is not going to be used and need to be destroyed.
@@ -183,7 +182,13 @@ sql_result_blob(sql_context * pCtx,
     )
 {
 	assert(n >= 0);
-	if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 0, xDel) != 0)
+	if (xDel == SQL_STATIC)
+		mem_set_static_binary(pCtx->pOut, (char *)z, n);
+	else if (xDel == SQL_DYNAMIC)
+		mem_set_allocated_binary(pCtx->pOut, (char *)z, n);
+	else if (xDel != SQL_TRANSIENT)
+		mem_set_dynamic_binary(pCtx->pOut, (char *)z, n);
+	else if (sqlVdbeMemSetStr(pCtx->pOut, z, n, 0, xDel) != 0)
 		pCtx->is_aborted = true;
 }
 
@@ -832,7 +837,13 @@ sql_bind_blob(sql_stmt * pStmt,
 	if (zData == NULL)
 		return 0;
 	struct Mem *var = &p->aVar[i - 1];
-	if (sqlVdbeMemSetStr(var, zData, nData, 0, xDel) != 0)
+	if (xDel == SQL_STATIC)
+		mem_set_static_binary(var, (char *)zData, nData);
+	else if (xDel == SQL_DYNAMIC)
+		mem_set_allocated_binary(var, (char *)zData, nData);
+	else if (xDel != SQL_TRANSIENT)
+		mem_set_dynamic_binary(var, (char *)zData, nData);
+	else if (sqlVdbeMemSetStr(var, zData, nData, 0, xDel) != 0)
 		return -1;
 	return sql_bind_type(p, i, "varbinary");
 }
