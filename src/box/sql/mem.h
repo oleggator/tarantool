@@ -488,8 +488,6 @@ int sqlVdbeMemClearAndResize(struct Mem * pMem, int n);
 void
 mem_set_ptr(struct Mem *mem, void *ptr);
 
-int
-sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 
