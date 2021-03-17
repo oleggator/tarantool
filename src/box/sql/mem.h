@@ -334,6 +334,9 @@ mem_implicit_cast_old(struct Mem *mem, enum field_type type);
 int
 mem_get_integer(struct Mem *mem, int64_t *i, bool *is_neg);
 
+int
+mem_get_unsigned(struct Mem *mem, uint64_t *u);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -426,9 +429,6 @@ sql_value_double(struct Mem *);
 
 bool
 sql_value_boolean(struct Mem *val);
-
-uint64_t
-sql_value_uint64(struct Mem *val);
 
 const unsigned char *
 sql_value_text(struct Mem *);
