@@ -769,6 +769,40 @@ mem_convert_to_integer_lossless(struct Mem *mem)
 	return -1;
 }
 
+static inline int
+mem_convert_integer_to_double(struct Mem *mem)
+{
+	double d;
+	if ((mem->flags & MEM_UInt) != 0)
+		d = (double)mem->u.u;
+	else
+		d = (double)mem->u.i;
+	mem_set_double(mem, d);
+	return 0;
+}
+
+static inline int
+mem_convert_varstring_to_double(struct Mem *mem)
+{
+	double d;
+	if (sqlAtoF(mem->z, &d, mem->n) == 0)
+		return -1;
+	mem_set_double(mem, d);
+	return 0;
+}
+
+int
+mem_convert_to_double(struct Mem *mem)
+{
+	if ((mem->flags & MEM_Real) != 0)
+		return 0;
+	if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+		return mem_convert_integer_to_double(mem);
+	if ((mem->flags & MEM_Str) != 0)
+		return mem_convert_varstring_to_double(mem);
+	return -1;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -1844,21 +1878,6 @@ mem_apply_numeric_type(struct Mem *record)
 	return 0;
 }
 
-/*
- * Convert pMem so that it is of type MEM_Real.
- * Invalidate any prior representations.
- */
-int
-sqlVdbeMemRealify(Mem * pMem)
-{
-	assert(EIGHT_BYTE_ALIGNMENT(pMem));
-	double v;
-	if (sqlVdbeRealValue(pMem, &v))
-		return -1;
-	mem_set_double(pMem, v);
-	return 0;
-}
-
 int
 vdbe_mem_numerify(struct Mem *mem)
 {
@@ -1956,7 +1975,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 			return -1;
 		return 0;
 	case FIELD_TYPE_DOUBLE:
-		return sqlVdbeMemRealify(pMem);
+		return mem_convert_to_double(pMem);
 	case FIELD_TYPE_NUMBER:
 		return vdbe_mem_numerify(pMem);
 	case FIELD_TYPE_VARBINARY:
@@ -2157,11 +2176,11 @@ mem_apply_type(struct Mem *record, enum field_type type)
 	case FIELD_TYPE_NUMBER:
 		if ((record->flags & (MEM_Real | MEM_Int | MEM_UInt)) != 0)
 			return 0;
-		return sqlVdbeMemRealify(record);
+		return mem_convert_to_double(record);
 	case FIELD_TYPE_DOUBLE:
 		if ((record->flags & MEM_Real) != 0)
 			return 0;
-		return sqlVdbeMemRealify(record);
+		return mem_convert_to_double(record);
 	case FIELD_TYPE_STRING:
 		/*
 		 * Only attempt the conversion to TEXT if there is
@@ -2203,28 +2222,6 @@ mem_apply_type(struct Mem *record, enum field_type type)
 	default:
 		return -1;
 	}
-}
-
-/**
- * Convert the numeric value contained in MEM to double.
- *
- * @param mem The MEM that contains the numeric value.
- * @retval 0 if the conversion was successful, -1 otherwise.
- */
-static int
-mem_convert_to_double(struct Mem *mem)
-{
-	if ((mem->flags & MEM_Real) != 0)
-		return 0;
-	if ((mem->flags & (MEM_Int | MEM_UInt)) == 0)
-		return -1;
-	double d;
-	if ((mem->flags & MEM_Int) != 0)
-		d = (double)mem->u.i;
-	else
-		d = (double)mem->u.u;
-	mem_set_double(mem, d);
-	return 0;
 }
 
 /**
