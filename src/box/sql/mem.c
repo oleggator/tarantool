@@ -1974,23 +1974,6 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 }
 
 /*
- * The MEM structure is already a MEM_Real.  Try to also make it a
- * MEM_Int if we can.
- */
-int
-mem_apply_integer_type(Mem *pMem)
-{
-	int rc;
-	i64 ix;
-	assert(pMem->flags & MEM_Real);
-	assert(EIGHT_BYTE_ALIGNMENT(pMem));
-
-	if ((rc = doubleToInt64(pMem->u.r, (int64_t *) &ix)) == 0)
-		mem_set_integer(pMem, ix, pMem->u.r <= -1);
-	return rc;
-}
-
-/*
  * Add MEM_Str to the set of representations for the given Mem.  Numbers
  * are converted using sql_snprintf().  Converting a BLOB to a string
  * is a no-op.

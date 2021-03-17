@@ -392,7 +392,6 @@ int
 vdbe_mem_numerify(struct Mem *mem);
 
 int sqlVdbeMemCast(struct Mem *, enum field_type type);
-int mem_apply_integer_type(struct Mem *);
 int sqlVdbeMemStringify(struct Mem *);
 int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
