@@ -146,6 +146,54 @@ vdbe_emit_stat_space_open(struct Parse *parse, const char *table_name)
 }
 
 /*
+ * Check to see if column iCol of the given statement is valid.  If
+ * it is, return a pointer to the Mem for the value of that column.
+ * If iCol is not valid, return a pointer to a Mem which has a value
+ * of NULL.
+ */
+static Mem *
+columnMem(sql_stmt * pStmt, int i)
+{
+	Vdbe *pVm;
+	Mem *pOut;
+
+	pVm = (Vdbe *) pStmt;
+	if (pVm == 0)
+		return (Mem *) columnNullValue();
+	assert(pVm->db);
+	if (pVm->pResultSet != 0 && i < pVm->nResColumn && i >= 0) {
+		pOut = &pVm->pResultSet[i];
+	} else {
+		pOut = (Mem *) columnNullValue();
+	}
+	return pOut;
+}
+
+static int
+sql_value_int(sql_value * pVal)
+{
+	int64_t i = 0;
+	bool is_neg;
+	mem_get_integer((Mem *) pVal, &i, &is_neg);
+	return (int)i;
+}
+
+static int
+sql_column_int(sql_stmt * pStmt, int i)
+{
+	return sql_value_int(columnMem(pStmt, i));
+}
+
+static sql_int64
+sql_value_int64(sql_value * pVal)
+{
+	int64_t i = 0;
+	bool unused;
+	mem_get_integer((Mem *) pVal, &i, &unused);
+	return i;
+}
+
+/*
  * Recommended number of samples for _sql_stat4
  */
 #ifndef SQL_STAT4_SAMPLES

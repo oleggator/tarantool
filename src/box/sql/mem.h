@@ -427,12 +427,6 @@ sql_value_double(struct Mem *);
 bool
 sql_value_boolean(struct Mem *val);
 
-int
-sql_value_int(struct Mem *);
-
-sql_int64
-sql_value_int64(struct Mem *);
-
 uint64_t
 sql_value_uint64(struct Mem *val);
 

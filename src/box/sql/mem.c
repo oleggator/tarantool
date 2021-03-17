@@ -2437,24 +2437,6 @@ sql_value_boolean(sql_value *val)
 	return b;
 }
 
-int
-sql_value_int(sql_value * pVal)
-{
-	int64_t i = 0;
-	bool is_neg;
-	mem_get_integer((Mem *) pVal, &i, &is_neg);
-	return (int)i;
-}
-
-sql_int64
-sql_value_int64(sql_value * pVal)
-{
-	int64_t i = 0;
-	bool unused;
-	mem_get_integer((Mem *) pVal, &i, &unused);
-	return i;
-}
-
 uint64_t
 sql_value_uint64(sql_value *val)
 {

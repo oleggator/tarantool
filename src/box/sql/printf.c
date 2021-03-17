@@ -144,7 +144,10 @@ getIntArg(PrintfArguments * p)
 {
 	if (p->nArg <= p->nUsed)
 		return 0;
-	return sql_value_int64(p->apArg[p->nUsed++]);
+	int64_t i;
+	bool unused;
+	mem_get_integer(p->apArg[p->nUsed++], &i, &unused);
+	return (sql_int64)i;
 }
 
 static double
