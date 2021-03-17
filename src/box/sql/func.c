@@ -142,9 +142,12 @@ port_vdbemem_dump_lua(struct port *base, struct lua_State *L, bool is_flat)
 		case MP_NIL:
 			lua_pushnil(L);
 			break;
-		case MP_BOOL:
-			lua_pushboolean(L, sql_value_boolean(param));
+		case MP_BOOL: {
+			bool b;
+			mem_get_boolean(param, &b);
+			lua_pushboolean(L, b);
 			break;
+		}
 		default:
 			unreachable();
 		}
@@ -206,7 +209,9 @@ port_vdbemem_get_msgpack(struct port *base, uint32_t *size)
 			break;
 		}
 		case MP_BOOL: {
-			mpstream_encode_bool(&stream, sql_value_boolean(param));
+			bool b;
+			mem_get_boolean(param, &b);
+			mpstream_encode_bool(&stream, b);
 			break;
 		}
 		default:
@@ -1451,8 +1456,9 @@ quoteFunc(sql_context * context, int argc, sql_value ** argv)
 			break;
 		}
 	case MP_BOOL: {
-		sql_result_text(context,
-				SQL_TOKEN_BOOLEAN(sql_value_boolean(argv[0])),
+		bool b;
+		mem_get_boolean(argv[0], &b);
+		sql_result_text(context, SQL_TOKEN_BOOLEAN(b),
 				-1, SQL_TRANSIENT);
 		break;
 	}
