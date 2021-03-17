@@ -313,6 +313,9 @@ mem_convert_to_integer(struct Mem *mem);
 int
 mem_convert_to_integer_lossless(struct Mem *mem);
 
+int
+mem_convert_to_double(struct Mem *mem);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -378,7 +381,6 @@ registerTrace(int iReg, Mem *p);
  */
 int
 mem_apply_numeric_type(struct Mem *record);
-int sqlVdbeMemRealify(struct Mem *);
 
 /**
  * Convert @a mem to NUMBER type, so that after conversion it has
