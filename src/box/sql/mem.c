@@ -798,6 +798,21 @@ mem_convert_to_double(struct Mem *mem)
 }
 
 int
+mem_convert_to_number(struct Mem *mem)
+{
+	if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real)) != 0)
+		return 0;
+	if ((mem->flags & MEM_Bool) != 0)
+		return mem_convert_boolean_to_integer(mem);
+	if ((mem->flags & (MEM_Str | MEM_Blob)) != 0) {
+		if (mem_convert_varstring_to_integer(mem) == 0)
+			return 0;
+		return mem_convert_varstring_to_double(mem);
+	}
+	return -1;
+}
+
+int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
 	mem_clear(to);
@@ -1848,47 +1863,6 @@ registerTrace(int iReg, Mem *p) {
 }
 #endif
 
-int
-mem_apply_numeric_type(struct Mem *record)
-{
-	if ((record->flags & MEM_Str) == 0)
-		return -1;
-	int64_t integer_value;
-	bool is_neg;
-	if (sql_atoi64(record->z, &integer_value, &is_neg, record->n) == 0) {
-		mem_set_integer(record, integer_value, is_neg);
-		return 0;
-	}
-	double float_value;
-	if (sqlAtoF(record->z, &float_value, record->n) == 0)
-		return -1;
-	mem_set_double(record, float_value);
-	return 0;
-}
-
-int
-vdbe_mem_numerify(struct Mem *mem)
-{
-	if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real | MEM_Null)) != 0)
-		return 0;
-	if ((mem->flags & MEM_Bool) != 0) {
-		mem_set_integer(mem, (int64_t)mem->u.b, false);
-		return 0;
-	}
-	assert((mem->flags & (MEM_Blob | MEM_Str)) != 0);
-	bool is_neg;
-	int64_t i;
-	if (sql_atoi64(mem->z, &i, &is_neg, mem->n) == 0) {
-		mem_set_integer(mem, i, is_neg);
-	} else {
-		double d;
-		if (sqlAtoF(mem->z, &d, mem->n) == 0)
-			return -1;
-		mem_set_double(mem, d);
-	}
-	return 0;
-}
-
 /*
  * Cast the datatype of the value in pMem according to the type
  * @type.  Casting is different from applying type in that a cast
@@ -1965,7 +1939,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 	case FIELD_TYPE_DOUBLE:
 		return mem_convert_to_double(pMem);
 	case FIELD_TYPE_NUMBER:
-		return vdbe_mem_numerify(pMem);
+		return mem_convert_to_number(pMem);
 	case FIELD_TYPE_VARBINARY:
 		if ((pMem->flags & MEM_Blob) != 0)
 			return 0;
