@@ -239,6 +239,9 @@ mem_copy(struct Mem *to, const struct Mem *from);
 int
 mem_copy_as_ephemeral(struct Mem *to, const struct Mem *from);
 
+void
+mem_set_zerobinary(struct Mem *mem, int n);
+
 int
 mem_move(struct Mem *to, struct Mem *from);
 
@@ -460,8 +463,6 @@ mem_set_ptr(struct Mem *mem, void *ptr);
 
 int
 sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
-void
-sqlVdbeMemSetZeroBlob(struct Mem *, int);
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 

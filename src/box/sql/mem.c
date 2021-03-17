@@ -473,6 +473,19 @@ mem_copy_binary(struct Mem *mem, const char *value, uint32_t size)
 	return 0;
 }
 
+void
+mem_set_zerobinary(struct Mem *mem, int n)
+{
+	mem_destroy(mem);
+	if (n < 0)
+		n = 0;
+	mem->u.nZero = n;
+	mem->z = NULL;
+	mem->n = 0;
+	mem->flags = MEM_Blob | MEM_Zero;
+	mem->field_type = FIELD_TYPE_VARBINARY;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -2189,22 +2202,6 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 	}
 
 	return 0;
-}
-
-/*
- * Delete any previous value and set the value to be a BLOB of length
- * n containing all zeros.
- */
-void
-sqlVdbeMemSetZeroBlob(Mem * pMem, int n)
-{
-	mem_destroy(pMem);
-	pMem->flags = MEM_Blob | MEM_Zero;
-	pMem->n = 0;
-	if (n < 0)
-		n = 0;
-	pMem->u.nZero = n;
-	pMem->z = 0;
 }
 
 /*
