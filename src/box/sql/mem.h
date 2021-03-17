@@ -322,6 +322,9 @@ mem_convert_to_number(struct Mem *mem);
 int
 mem_convert_to_string(struct Mem *mem);
 
+int
+mem_explicit_cast(struct Mem *mem, enum field_type type);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -374,7 +377,6 @@ registerTrace(int iReg, Mem *p);
 # define memAboutToChange(P,M)
 #endif
 
-int sqlVdbeMemCast(struct Mem *, enum field_type type);
 int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
 #define ExpandBlob(P) (mem_is_zeroblob(P)? sqlVdbeMemExpandBlob(P) : 0)
@@ -416,17 +418,6 @@ void sql_value_apply_type(struct Mem *val, enum field_type type);
  */
 int
 mem_apply_type(struct Mem *record, enum field_type type);
-
-/**
- * Convert the numeric value contained in MEM to another numeric
- * type.
- *
- * @param mem The MEM that contains the numeric value.
- * @param type The type to convert to.
- * @retval 0 if the conversion was successful, -1 otherwise.
- */
-int
-mem_convert_to_numeric(struct Mem *mem, enum field_type type);
 
 /** Setters = Change MEM value. */
 
