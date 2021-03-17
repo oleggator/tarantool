@@ -319,6 +319,9 @@ mem_convert_to_double(struct Mem *mem);
 int
 mem_convert_to_number(struct Mem *mem);
 
+int
+mem_convert_to_string(struct Mem *mem);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -372,7 +375,6 @@ registerTrace(int iReg, Mem *p);
 #endif
 
 int sqlVdbeMemCast(struct Mem *, enum field_type type);
-int sqlVdbeMemStringify(struct Mem *);
 int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
 #define ExpandBlob(P) (mem_is_zeroblob(P)? sqlVdbeMemExpandBlob(P) : 0)
