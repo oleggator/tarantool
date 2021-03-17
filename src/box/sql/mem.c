@@ -2771,14 +2771,6 @@ sqlMemCompare(const Mem * pMem1, const Mem * pMem2, const struct coll * pColl)
 	return sqlBlobCompare(pMem1, pMem2);
 }
 
-bool
-mem_is_type_compatible(struct Mem *mem, enum field_type type)
-{
-	enum mp_type mp_type = mem_mp_type(mem);
-	assert(mp_type < MP_EXT);
-	return field_mp_plain_type_is_compatible(type, mp_type, true);
-}
-
 int
 sql_vdbemem_finalize(struct Mem *mem, struct func *func)
 {
