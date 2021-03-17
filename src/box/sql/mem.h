@@ -354,6 +354,9 @@ mem_get_unsigned(const struct Mem *mem, uint64_t *u);
 int
 mem_get_double(const struct Mem *mem, double *d);
 
+int
+mem_get_boolean(const struct Mem *mem, bool *b);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -430,16 +433,11 @@ releaseMemArray(Mem * p, int N);
 
 /** Getters. */
 
-int
-mem_value_bool(const struct Mem *mem, bool *b);
 const void *
 sql_value_blob(struct Mem *);
 
 int
 sql_value_bytes(struct Mem *);
-
-bool
-sql_value_boolean(struct Mem *val);
 
 const unsigned char *
 sql_value_text(struct Mem *);
