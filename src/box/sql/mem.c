@@ -731,7 +731,7 @@ mem_convert_double_to_integer_lossless(struct Mem *mem)
 }
 
 static inline int
-mem_convert_bool_to_integer(struct Mem *mem)
+mem_convert_boolean_to_integer(struct Mem *mem)
 {
 	mem_set_integer(mem, (int64_t)mem->u.b, false);
 	return 0;
@@ -747,7 +747,7 @@ mem_convert_to_integer(struct Mem *mem)
 	if ((mem->flags & MEM_Real) != 0)
 		return mem_convert_double_to_integer(mem);
 	if ((mem->flags & MEM_Bool) != 0)
-		return mem_convert_bool_to_integer(mem);
+		return mem_convert_boolean_to_integer(mem);
 	return -1;
 }
 
