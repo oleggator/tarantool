@@ -689,6 +689,80 @@ mem_set_cleared(struct Mem *mem)
 	mem->flags = MEM_Null | MEM_Cleared;
 }
 
+static inline int
+mem_convert_varstring_to_integer(struct Mem *mem)
+{
+	bool is_neg;
+	int64_t i;
+	if (sql_atoi64(mem->z, &i, &is_neg, mem->n) != 0)
+		return -1;
+	mem_set_integer(mem, i, is_neg);
+	return 0;
+}
+
+static inline int
+mem_convert_double_to_integer(struct Mem *mem)
+{
+	double d = mem->u.r;
+	if (d < 0 && d >= (double)INT64_MIN) {
+		mem_set_integer(mem, (int64_t)d, true);
+		return 0;
+	}
+	if (d >= 0 && d < (double)UINT64_MAX) {
+		mem_set_integer(mem, (int64_t)(uint64_t)d, false);
+		return 0;
+	}
+	return -1;
+}
+
+static inline int
+mem_convert_double_to_integer_lossless(struct Mem *mem)
+{
+	double d = mem->u.r;
+	if (d < 0 && d >= (double)INT64_MIN && (double)(int64_t)d == d) {
+		mem_set_integer(mem, (int64_t)d, true);
+		return 0;
+	}
+	if (d >= 0 && d < (double)UINT64_MAX && (double)(uint64_t)d == d) {
+		mem_set_integer(mem, (int64_t)(uint64_t)d, false);
+		return 0;
+	}
+	return -1;
+}
+
+static inline int
+mem_convert_bool_to_integer(struct Mem *mem)
+{
+	mem_set_integer(mem, (int64_t)mem->u.b, false);
+	return 0;
+}
+
+int
+mem_convert_to_integer(struct Mem *mem)
+{
+	if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+		return 0;
+	if ((mem->flags & (MEM_Str | MEM_Blob)) != 0)
+		return mem_convert_varstring_to_integer(mem);
+	if ((mem->flags & MEM_Real) != 0)
+		return mem_convert_double_to_integer(mem);
+	if ((mem->flags & MEM_Bool) != 0)
+		return mem_convert_bool_to_integer(mem);
+	return -1;
+}
+
+int
+mem_convert_to_integer_lossless(struct Mem *mem)
+{
+	if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+		return 0;
+	if ((mem->flags & MEM_Str) != 0)
+		return mem_convert_varstring_to_integer(mem);
+	if ((mem->flags & MEM_Real) != 0)
+		return mem_convert_double_to_integer_lossless(mem);
+	return -1;
+}
+
 int
 mem_copy(struct Mem *to, const struct Mem *from)
 {
@@ -2177,29 +2251,6 @@ mem_convert_to_unsigned(struct Mem *mem)
 	if (d < 0.0 || d >= (double)UINT64_MAX)
 		return -1;
 	mem_set_unsigned(mem, (uint64_t) d);
-	return 0;
-}
-
-/**
- * Convert the numeric value contained in MEM to integer.
- *
- * @param mem The MEM that contains the numeric value.
- * @retval 0 if the conversion was successful, -1 otherwise.
- */
-static int
-mem_convert_to_integer(struct Mem *mem)
-{
-	if ((mem->flags & (MEM_UInt | MEM_Int)) != 0)
-		return 0;
-	if ((mem->flags & MEM_Real) == 0)
-		return -1;
-	double d = mem->u.r;
-	if (d >= (double)UINT64_MAX || d < (double)INT64_MIN)
-		return -1;
-	if (d < (double)INT64_MAX)
-		mem_set_integer(mem, (int64_t) d, d < 0);
-	else
-		mem_set_integer(mem, (uint64_t) d, false);
 	return 0;
 }
 

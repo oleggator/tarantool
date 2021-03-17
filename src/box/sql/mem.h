@@ -307,6 +307,12 @@ int
 mem_compare(struct Mem *left, struct Mem *right, int *result,
 	    enum field_type type, struct coll *coll);
 
+int
+mem_convert_to_integer(struct Mem *mem);
+
+int
+mem_convert_to_integer_lossless(struct Mem *mem);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
