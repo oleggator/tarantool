@@ -229,6 +229,9 @@ mem_set_dynamic_binary(struct Mem *mem, char *value, uint32_t size);
 void
 mem_set_allocated_binary(struct Mem *mem, char *value, uint32_t size);
 
+void
+mem_set_zerobinary(struct Mem *mem, int n);
+
 int
 mem_copy_binary(struct Mem *mem, const char *value, uint32_t size);
 
@@ -469,8 +472,6 @@ mem_set_ptr(struct Mem *mem, void *ptr);
 
 int
 sqlVdbeMemSetStr(struct Mem *, const char *, int, u8, void (*)(void *));
-void
-sqlVdbeMemSetZeroBlob(struct Mem *, int);
 void sqlValueFree(struct Mem *);
 struct Mem *sqlValueNew(struct sql *);
 

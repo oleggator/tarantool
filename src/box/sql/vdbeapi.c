@@ -266,7 +266,7 @@ sql_result_value(sql_context * pCtx, sql_value * pValue)
 void
 sql_result_zeroblob(sql_context * pCtx, int n)
 {
-	sqlVdbeMemSetZeroBlob(pCtx->pOut, n);
+	mem_set_zerobinary(pCtx->pOut, n);
 }
 
 int
@@ -278,7 +278,7 @@ sql_result_zeroblob64(sql_context * pCtx, u64 n)
 			 "is too big");
 		return -1;
 	}
-	sqlVdbeMemSetZeroBlob(pCtx->pOut, (int)n);
+	mem_set_zerobinary(pCtx->pOut, (int)n);
 	return 0;
 }
 
@@ -956,7 +956,7 @@ sql_bind_zeroblob(sql_stmt * pStmt, int i, int n)
 	Vdbe *p = (Vdbe *) pStmt;
 	if (vdbeUnbind(p, i) != 0)
 		return -1;
-	sqlVdbeMemSetZeroBlob(&p->aVar[i - 1], n);
+	mem_set_zerobinary(&p->aVar[i - 1], n);
 	return 0;
 }
 
