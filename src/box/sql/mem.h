@@ -318,6 +318,12 @@ int
 mem_compare(const struct Mem *left, const struct Mem *right, int *result,
 	    enum field_type type, struct coll *coll);
 
+int
+mem_convert_to_integer(struct Mem *mem);
+
+int
+mem_convert_to_integer_lossless(struct Mem *mem);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -395,7 +401,6 @@ int
 vdbe_mem_numerify(struct Mem *mem);
 
 int sqlVdbeMemCast(struct Mem *, enum field_type type);
-int mem_apply_integer_type(struct Mem *);
 int sqlVdbeMemStringify(struct Mem *);
 int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
