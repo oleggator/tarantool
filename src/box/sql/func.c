@@ -118,9 +118,12 @@ port_vdbemem_dump_lua(struct port *base, struct lua_State *L, bool is_flat)
 			luaL_pushint64(L, n);
 			break;
 		}
-		case MP_UINT:
-			luaL_pushuint64(L, sql_value_uint64(param));
+		case MP_UINT: {
+			uint64_t u;
+			mem_get_unsigned(param, &u);
+			luaL_pushuint64(L, u);
 			break;
+		}
 		case MP_DOUBLE:
 			lua_pushnumber(L, sql_value_double(param));
 			break;
@@ -171,7 +174,8 @@ port_vdbemem_get_msgpack(struct port *base, uint32_t *size)
 			FALLTHROUGH;
 		}
 		case MP_UINT: {
-			sql_uint64 val = sql_value_uint64(param);
+			uint64_t val;
+			mem_get_unsigned(param, &val);
 			mpstream_encode_uint(&stream, val);
 			break;
 		}
@@ -511,7 +515,9 @@ absFunc(sql_context * context, int argc, sql_value ** argv)
 	UNUSED_PARAMETER(argc);
 	switch (sql_value_type(argv[0])) {
 	case MP_UINT: {
-		sql_result_uint(context, sql_value_uint64(argv[0]));
+		uint64_t u;
+		mem_get_unsigned(argv[0], &u);
+		sql_result_uint(context, u);
 		break;
 	}
 	case MP_INT: {
@@ -1487,7 +1493,7 @@ charFunc(sql_context * context, int argc, sql_value ** argv)
 		if (sql_value_type(argv[i]) == MP_INT)
 			x = 0xfffd;
 		else
-			x = sql_value_uint64(argv[i]);
+			mem_get_unsigned(argv[i], &x);
 		if (x > 0x10ffff)
 			x = 0xfffd;
 		c = (unsigned)(x & 0x1fffff);
