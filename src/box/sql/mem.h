@@ -331,6 +331,9 @@ mem_implicit_cast(struct Mem *mem, enum field_type type);
 int
 mem_implicit_cast_old(struct Mem *mem, enum field_type type);
 
+int
+mem_get_integer(struct Mem *mem, int64_t *i, bool *is_neg);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -411,7 +414,6 @@ releaseMemArray(Mem * p, int N);
 
 int
 mem_value_bool(const struct Mem *mem, bool *b);
-int sqlVdbeIntValue(struct Mem *, int64_t *, bool *is_neg);
 int sqlVdbeRealValue(struct Mem *, double *);
 const void *
 sql_value_blob(struct Mem *);
