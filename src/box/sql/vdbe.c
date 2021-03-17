@@ -575,7 +575,6 @@ case OP_SetDiag: {             /* jump */
 case OP_Gosub: {            /* jump */
 	assert(pOp->p1>0 && pOp->p1<=(p->nMem+1 - p->nCursor));
 	pIn1 = &aMem[pOp->p1];
-	assert(VdbeMemDynamic(pIn1)==0);
 	memAboutToChange(p, pIn1);
 	mem_set_unsigned(pIn1, pOp - aOp);
 	REGISTER_TRACE(p, pOp->p1, pIn1);
@@ -617,7 +616,6 @@ case OP_InitCoroutine: {     /* jump */
 	assert(pOp->p2>=0 && pOp->p2<p->nOp);
 	assert(pOp->p3>0 && pOp->p3<p->nOp);
 	pOut = &aMem[pOp->p1];
-	assert(!VdbeMemDynamic(pOut));
 	mem_set_unsigned(pOut, pOp->p3 - 1);
 	if (pOp->p2) goto jump_to_p2;
 	break;
@@ -659,7 +657,6 @@ case OP_EndCoroutine: {           /* in1 */
  */
 case OP_Yield: {            /* in1, jump */
 	pIn1 = &aMem[pOp->p1];
-	assert(VdbeMemDynamic(pIn1)==0);
 	int pcDest = (int)pIn1->u.u;
 	mem_set_unsigned(pIn1, pOp - aOp);
 	REGISTER_TRACE(p, pOp->p1, pIn1);
