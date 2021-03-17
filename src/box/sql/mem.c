@@ -944,6 +944,28 @@ mem_convert_to_string(struct Mem *mem)
 }
 
 static inline int
+mem_convert_double_to_unsigned(struct Mem *mem)
+{
+	double d = mem->u.r;
+	if (d >= 0 && d < (double)UINT64_MAX) {
+		mem_set_unsigned(mem, (uint64_t)d);
+		return 0;
+	}
+	return -1;
+}
+
+static inline int
+mem_convert_double_to_unsigned_lossless(struct Mem *mem)
+{
+	double d = mem->u.r;
+	if (d >= 0 && d < (double)UINT64_MAX && (double)(uint64_t)d == d) {
+		mem_set_unsigned(mem, (uint64_t)d);
+		return 0;
+	}
+	return -1;
+}
+
+static inline int
 mem_convert_varstring_to_unsigned(struct Mem *mem)
 {
 	bool is_neg;
@@ -1060,6 +1082,140 @@ mem_explicit_cast(struct Mem *mem, enum field_type type)
 		return -1;
 	case FIELD_TYPE_NUMBER:
 		return mem_convert_to_number(mem);
+	case FIELD_TYPE_SCALAR:
+		if ((mem->flags & MEM_Blob) != 0 &&
+		    (mem->flags & MEM_Subtype) != 0)
+			return -1;
+		return 0;
+	default:
+		break;
+	}
+	return -1;
+}
+
+int
+mem_implicit_cast(struct Mem *mem, enum field_type type)
+{
+	if ((mem->flags & MEM_Null) != 0) {
+		mem->field_type = type;
+		return 0;
+	}
+	switch (type) {
+	case FIELD_TYPE_UNSIGNED:
+		if ((mem->flags & MEM_UInt) != 0)
+			return 0;
+		if ((mem->flags & MEM_Real) != 0)
+			return mem_convert_double_to_unsigned(mem);
+		return -1;
+	case FIELD_TYPE_STRING:
+		if ((mem->flags & MEM_Str) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_DOUBLE:
+		if ((mem->flags & MEM_Real) != 0)
+			return 0;
+		if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+			return mem_convert_integer_to_double(mem);
+		return -1;
+	case FIELD_TYPE_INTEGER:
+		if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+			return 0;
+		if ((mem->flags & MEM_Real) != 0)
+			return mem_convert_double_to_integer(mem);
+		return -1;
+	case FIELD_TYPE_BOOLEAN:
+		if ((mem->flags & MEM_Bool) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_VARBINARY:
+		if ((mem->flags & MEM_Blob) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_NUMBER:
+		if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real)) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_MAP:
+		if (mem_is_map(mem))
+			return 0;
+		return -1;
+	case FIELD_TYPE_ARRAY:
+		if (mem_is_array(mem))
+			return 0;
+		return -1;
+	case FIELD_TYPE_SCALAR:
+		if ((mem->flags & MEM_Blob) != 0 &&
+		    (mem->flags & MEM_Subtype) != 0)
+			return -1;
+		return 0;
+	case FIELD_TYPE_ANY:
+		return 0;
+	default:
+		break;
+	}
+	return -1;
+}
+
+int
+mem_implicit_cast_old(struct Mem *mem, enum field_type type)
+{
+	if (mem_is_null(mem))
+		return 0;
+	switch (type) {
+	case FIELD_TYPE_UNSIGNED:
+		if ((mem->flags & MEM_UInt) != 0)
+			return 0;
+		if ((mem->flags & MEM_Real) != 0)
+			return mem_convert_double_to_unsigned_lossless(mem);
+		if ((mem->flags & MEM_Str) != 0)
+			return mem_convert_varstring_to_unsigned(mem);
+		return -1;
+	case FIELD_TYPE_STRING:
+		if ((mem->flags & (MEM_Str | MEM_Blob)) != 0)
+			return 0;
+		if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+			return mem_convert_integer_to_string(mem);
+		if ((mem->flags & MEM_Real) != 0)
+			return mem_convert_double_to_string(mem);
+		return -1;
+	case FIELD_TYPE_DOUBLE:
+		if ((mem->flags & MEM_Real) != 0)
+			return 0;
+		if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+			return mem_convert_integer_to_double(mem);
+		if ((mem->flags & MEM_Str) != 0)
+			return mem_convert_varstring_to_double(mem);
+		return -1;
+	case FIELD_TYPE_INTEGER:
+		if ((mem->flags & (MEM_Int | MEM_UInt)) != 0)
+			return 0;
+		if ((mem->flags & MEM_Str) != 0)
+			return mem_convert_varstring_to_integer(mem);
+		if (mem_is_double(mem))
+			return mem_convert_double_to_integer_lossless(mem);
+		return -1;
+	case FIELD_TYPE_BOOLEAN:
+		if ((mem->flags & MEM_Bool) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_VARBINARY:
+		if ((mem->flags & MEM_Blob) != 0)
+			return 0;
+		return -1;
+	case FIELD_TYPE_NUMBER:
+		if ((mem->flags & (MEM_Int | MEM_UInt | MEM_Real)) != 0)
+			return 0;
+		if ((mem->flags & MEM_Str) != 0)
+			return mem_convert_to_number(mem);
+		return -1;
+	case FIELD_TYPE_MAP:
+		if (mem_is_map(mem))
+			return 0;
+		return -1;
+	case FIELD_TYPE_ARRAY:
+		if (mem_is_array(mem))
+			return 0;
+		return -1;
 	case FIELD_TYPE_SCALAR:
 		if ((mem->flags & MEM_Blob) != 0 &&
 		    (mem->flags & MEM_Subtype) != 0)
@@ -2134,117 +2290,6 @@ sqlVdbeMemExpandBlob(Mem * pMem)
 }
 
 /*
- * Exported version of mem_apply_type(). This one works on sql_value*,
- * not the internal Mem* type.
- */
-void
-sql_value_apply_type(
-	sql_value *pVal,
-	enum field_type type)
-{
-	mem_apply_type((Mem *) pVal, type);
-}
-
-int
-mem_apply_type(struct Mem *record, enum field_type type)
-{
-	if ((record->flags & MEM_Null) != 0)
-		return 0;
-	assert(type < field_type_MAX);
-	switch (type) {
-	case FIELD_TYPE_INTEGER:
-	case FIELD_TYPE_UNSIGNED:
-		if ((record->flags & (MEM_Bool | MEM_Blob)) != 0)
-			return -1;
-		if ((record->flags & MEM_UInt) == MEM_UInt)
-			return 0;
-		if ((record->flags & MEM_Real) == MEM_Real) {
-			double d = record->u.r;
-			if (d >= 0) {
-				if (double_compare_uint64(d, UINT64_MAX,
-							  1) > 0)
-					return 0;
-				if ((double)(uint64_t)d == d)
-					mem_set_unsigned(record, (uint64_t)d);
-			} else {
-				if (double_compare_nint64(d, INT64_MIN, 1) < 0)
-					return 0;
-				if ((double)(int64_t)d == d) {
-					mem_set_integer(record, (int64_t)d,
-							true);
-				}
-			}
-			return 0;
-		}
-		if ((record->flags & MEM_Str) != 0) {
-			bool is_neg;
-			int64_t i;
-			if (sql_atoi64(record->z, &i, &is_neg, record->n) != 0)
-				return -1;
-			mem_set_integer(record, i, is_neg);
-		}
-		if ((record->flags & MEM_Int) == MEM_Int) {
-			if (type == FIELD_TYPE_UNSIGNED)
-				return -1;
-			return 0;
-		}
-		return 0;
-	case FIELD_TYPE_BOOLEAN:
-		if ((record->flags & MEM_Bool) == MEM_Bool)
-			return 0;
-		return -1;
-	case FIELD_TYPE_NUMBER:
-		if ((record->flags & (MEM_Real | MEM_Int | MEM_UInt)) != 0)
-			return 0;
-		return mem_convert_to_double(record);
-	case FIELD_TYPE_DOUBLE:
-		if ((record->flags & MEM_Real) != 0)
-			return 0;
-		return mem_convert_to_double(record);
-	case FIELD_TYPE_STRING:
-		/*
-		 * Only attempt the conversion to TEXT if there is
-		 * an integer or real representation (BLOB and
-		 * NULL do not get converted).
-		 */
-		if ((record->flags & MEM_Str) == 0 &&
-		    (record->flags & (MEM_Real | MEM_Int | MEM_UInt)) != 0)
-			mem_convert_to_string(record);
-		record->flags &= ~(MEM_Real | MEM_Int | MEM_UInt);
-		return 0;
-	case FIELD_TYPE_VARBINARY:
-		if ((record->flags & MEM_Blob) == 0)
-			return -1;
-		return 0;
-	case FIELD_TYPE_SCALAR:
-		/* Can't cast MAP and ARRAY to scalar types. */
-		if ((record->flags & MEM_Subtype) != 0 &&
-		    record->subtype == SQL_SUBTYPE_MSGPACK) {
-			assert(mp_typeof(*record->z) == MP_MAP ||
-			       mp_typeof(*record->z) == MP_ARRAY);
-			return -1;
-		}
-		return 0;
-	case FIELD_TYPE_MAP:
-		if ((record->flags & MEM_Subtype) != 0 &&
-		    record->subtype == SQL_SUBTYPE_MSGPACK &&
-		    mp_typeof(*record->z) == MP_MAP)
-			return 0;
-		return -1;
-	case FIELD_TYPE_ARRAY:
-		if ((record->flags & MEM_Subtype) != 0 &&
-		    record->subtype == SQL_SUBTYPE_MSGPACK &&
-		    mp_typeof(*record->z) == MP_ARRAY)
-			return 0;
-		return -1;
-	case FIELD_TYPE_ANY:
-		return 0;
-	default:
-		return -1;
-	}
-}
-
-/*
  * Make sure pMem->z points to a writable allocation of at least
  * min(n,32) bytes.
  *
@@ -2767,14 +2812,6 @@ sqlMemCompare(const Mem * pMem1, const Mem * pMem2, const struct coll * pColl)
 
 	/* Both values must be blobs.  Compare using memcmp().  */
 	return sqlBlobCompare(pMem1, pMem2);
-}
-
-bool
-mem_is_type_compatible(struct Mem *mem, enum field_type type)
-{
-	enum mp_type mp_type = mem_mp_type(mem);
-	assert(mp_type < MP_EXT);
-	return field_mp_plain_type_is_compatible(type, mp_type, true);
 }
 
 int

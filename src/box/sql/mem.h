@@ -339,6 +339,12 @@ mem_convert_to_string0(struct Mem *mem);
 int
 mem_explicit_cast(struct Mem *mem, enum field_type type);
 
+int
+mem_implicit_cast(struct Mem *mem, enum field_type type);
+
+int
+mem_implicit_cast_old(struct Mem *mem, enum field_type type);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -392,44 +398,6 @@ registerTrace(int iReg, Mem *p);
 int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
 #define ExpandBlob(P) (mem_is_zeroblob(P)? sqlVdbeMemExpandBlob(P) : 0)
-void sql_value_apply_type(struct Mem *val, enum field_type type);
-
-
-/**
- * Processing is determined by the field type parameter:
- *
- * INTEGER:
- *    If memory holds floating point value and it can be
- *    converted without loss (2.0 - > 2), it's type is
- *    changed to INT. Otherwise, simply return success status.
- *
- * NUMBER:
- *    If memory holds INT or floating point value,
- *    no actions take place.
- *
- * STRING:
- *    Convert mem to a string representation.
- *
- * SCALAR:
- *    Mem is unchanged, but flag is set to BLOB in case of
- *    scalar-like type. Otherwise, (MAP, ARRAY) conversion
- *    is impossible.
- *
- * BOOLEAN:
- *    If memory holds BOOLEAN no actions take place.
- *
- * ANY:
- *    Mem is unchanged, no actions take place.
- *
- * MAP/ARRAY:
- *    These types can't be casted to scalar ones, or to each
- *    other. So the only valid conversion is to type itself.
- *
- * @param record The value to apply type to.
- * @param type The type to be applied.
- */
-int
-mem_apply_type(struct Mem *record, enum field_type type);
 
 /** Setters = Change MEM value. */
 
@@ -493,17 +461,6 @@ columnNullValue(void);
 int sqlVdbeMemTooBig(Mem *);
 
 int sqlMemCompare(const Mem *, const Mem *, const struct coll *);
-
-/**
- * Check that MEM_type of the mem is compatible with given type.
- *
- * @param mem The MEM that contains the value to check.
- * @param type The type to check.
- * @retval TRUE if the MEM_type of the value and the given type
- *         are compatible, FALSE otherwise.
- */
-bool
-mem_is_type_compatible(struct Mem *mem, enum field_type type);
 
 /** MEM manipulate functions. */
 

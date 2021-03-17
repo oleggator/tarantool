@@ -2001,23 +2001,12 @@ case OP_ApplyType: {
 	while((type = *(types++)) != field_type_MAX) {
 		assert(pIn1 <= &p->aMem[(p->nMem+1 - p->nCursor)]);
 		assert(memIsValid(pIn1));
-		if (!mem_is_type_compatible(pIn1, type)) {
-			/* Implicit cast is allowed only to numeric type. */
-			if (!sql_type_is_numeric(type))
-				goto type_mismatch;
-			/* Implicit cast is allowed only from numeric type. */
-			if (!mem_is_number(pIn1))
-				goto type_mismatch;
-			/* Try to convert numeric-to-numeric. */
-			if (mem_explicit_cast(pIn1, type) != 0)
-				goto type_mismatch;
+		if (mem_implicit_cast(pIn1, type) != 0) {
+			diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
+				 mem_str(pIn1), field_type_strs[type]);
+			goto abort_due_to_error;
 		}
 		pIn1++;
-		continue;
-type_mismatch:
-		diag_set(ClientError, ER_SQL_TYPE_MISMATCH,
-			 mem_str(pIn1), field_type_strs[type]);
-		goto abort_due_to_error;
 	}
 	break;
 }
@@ -2076,7 +2065,7 @@ case OP_MakeRecord: {
 	if (types != NULL) {
 		pRec = pData0;
 		do {
-			mem_apply_type(pRec++, *(types++));
+			mem_implicit_cast_old(pRec++, *(types++));
 		} while(types[0] != field_type_MAX);
 	}
 
