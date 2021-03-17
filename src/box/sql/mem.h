@@ -351,6 +351,9 @@ mem_get_integer(const struct Mem *mem, int64_t *i, bool *is_neg);
 int
 mem_get_unsigned(const struct Mem *mem, uint64_t *u);
 
+int
+mem_get_double(const struct Mem *mem, double *d);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -429,15 +432,11 @@ releaseMemArray(Mem * p, int N);
 
 int
 mem_value_bool(const struct Mem *mem, bool *b);
-int sqlVdbeRealValue(struct Mem *, double *);
 const void *
 sql_value_blob(struct Mem *);
 
 int
 sql_value_bytes(struct Mem *);
-
-double
-sql_value_double(struct Mem *);
 
 bool
 sql_value_boolean(struct Mem *val);

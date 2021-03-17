@@ -124,9 +124,12 @@ port_vdbemem_dump_lua(struct port *base, struct lua_State *L, bool is_flat)
 			luaL_pushuint64(L, u);
 			break;
 		}
-		case MP_DOUBLE:
-			lua_pushnumber(L, sql_value_double(param));
+		case MP_DOUBLE: {
+			double d;
+			mem_get_double(param, &d);
+			lua_pushnumber(L, d);
 			break;
+		}
 		case MP_STR:
 			lua_pushstring(L, (const char *) sql_value_text(param));
 			break;
@@ -180,8 +183,9 @@ port_vdbemem_get_msgpack(struct port *base, uint32_t *size)
 			break;
 		}
 		case MP_DOUBLE: {
-			mpstream_encode_double(&stream,
-					       sql_value_double(param));
+			double d;
+			mem_get_double(param, &d);
+			mpstream_encode_double(&stream, d);
 			break;
 		}
 		case MP_STR: {
@@ -543,12 +547,13 @@ absFunc(sql_context * context, int argc, sql_value ** argv)
 		return;
 	}
 	default:{
-			/* Because sql_value_double() returns 0.0 if the argument is not
-			 * something that can be converted into a number, we have:
-			 * IMP: R-01992-00519 Abs(X) returns 0.0 if X is a string or blob
+			/*
+			 * Abs(X) returns 0.0 if X is a string or blob
 			 * that cannot be converted to a numeric value.
 			 */
-			double rVal = sql_value_double(argv[0]);
+			double rVal;
+			if (mem_get_double(argv[0], &rVal) != 0)
+				rVal = 0;
 			if (rVal < 0)
 				rVal = -rVal;
 			sql_result_double(context, rVal);
@@ -866,7 +871,7 @@ roundFunc(sql_context * context, int argc, sql_value ** argv)
 		context->is_aborted = true;
 		return;
 	}
-	r = sql_value_double(argv[0]);
+	mem_get_double(argv[0], &r);
 	/* If Y==0 and X will fit in a 64-bit int,
 	 * handle the rounding directly,
 	 * otherwise use printf.
@@ -1373,7 +1378,7 @@ quoteFunc(sql_context * context, int argc, sql_value ** argv)
 	case MP_DOUBLE:{
 			double r1, r2;
 			char zBuf[50];
-			r1 = sql_value_double(argv[0]);
+			mem_get_double(argv[0], &r1);
 			sql_snprintf(sizeof(zBuf), zBuf, "%!.15g", r1);
 			sqlAtoF(zBuf, &r2, 20);
 			if (r1 != r2) {
@@ -1994,7 +1999,9 @@ sum_step(struct sql_context *context, int argc, sql_value **argv)
 			p->overflow = 1;
 		}
 	} else {
-		p->rSum += sql_value_double(argv[0]);
+		double d;
+		mem_get_double(argv[0], &d);
+		p->rSum += d;
 		p->approx = 1;
 	}
 }
