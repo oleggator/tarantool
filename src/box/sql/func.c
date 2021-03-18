@@ -54,6 +54,24 @@
 #include "lua/utils.h"
 #include "mpstream/mpstream.h"
 
+static const char *
+mem_get_str(struct Mem *mem)
+{
+	const char *str;
+	if (mem_convert_to_string0(mem) != 0 || mem_get_string0(mem, &str) != 0)
+		return NULL;
+	return str;
+}
+
+static const unsigned char *
+mem_get_ustr(struct Mem *mem)
+{
+	const char *str;
+	if (mem_convert_to_string0(mem) != 0 || mem_get_string0(mem, &str) != 0)
+		return NULL;
+	return (const unsigned char *)str;
+}
+
 /*
  * Return the collating function associated with a function.
  */
@@ -131,7 +149,7 @@ port_vdbemem_dump_lua(struct port *base, struct lua_State *L, bool is_flat)
 			break;
 		}
 		case MP_STR:
-			lua_pushstring(L, (const char *) sql_value_text(param));
+			lua_pushstring(L, mem_get_str(param));
 			break;
 		case MP_BIN:
 		case MP_ARRAY:
@@ -192,7 +210,7 @@ port_vdbemem_get_msgpack(struct port *base, uint32_t *size)
 			break;
 		}
 		case MP_STR: {
-			const char *str = (const char *) sql_value_text(param);
+			const char *str = mem_get_str(param);
 			mpstream_encode_str(&stream, str);
 			break;
 		}
@@ -497,7 +515,7 @@ lengthFunc(sql_context * context, int argc, sql_value ** argv)
 			break;
 		}
 	case MP_STR:{
-			const unsigned char *z = sql_value_text(argv[0]);
+			const unsigned char *z = mem_get_ustr(argv[0]);
 			if (z == 0)
 				return;
 			len = sql_utf8_char_count(z, sql_value_bytes(argv[0]));
@@ -652,8 +670,8 @@ position_func(struct sql_context *context, int argc, struct Mem **argv)
 			 * Character size is equal to
 			 * needle char size.
 			 */
-			haystack_str = sql_value_text(haystack);
-			needle_str = sql_value_text(needle);
+			haystack_str = mem_get_ustr(haystack);
+			needle_str = mem_get_ustr(needle);
 
 			int n_needle_chars =
 				sql_utf8_char_count(needle_str, n_needle_bytes);
@@ -715,8 +733,7 @@ printfFunc(sql_context * context, int argc, sql_value ** argv)
 	int n;
 	sql *db = sql_context_db_handle(context);
 
-	if (argc >= 1
-	    && (zFormat = (const char *)sql_value_text(argv[0])) != 0) {
+	if (argc >= 1 && (zFormat = mem_get_str(argv[0])) != NULL) {
 		x.nArg = argc - 1;
 		x.nUsed = 0;
 		x.apArg = argv + 1;
@@ -773,7 +790,7 @@ substrFunc(sql_context * context, int argc, sql_value ** argv)
 			return;
 		assert(len == sql_value_bytes(argv[0]));
 	} else {
-		z = sql_value_text(argv[0]);
+		z = mem_get_ustr(argv[0]);
 		if (z == 0)
 			return;
 		len = 0;
@@ -936,13 +953,13 @@ case_type##ICUFunc(sql_context *context, int argc, sql_value **argv)   \
 		context->is_aborted = true;                                    \
 		return;                                                        \
 	}                                                                      \
-	z2 = (char *)sql_value_text(argv[0]);                              \
+	z2 = mem_get_str(argv[0]);                                            \
 	n = sql_value_bytes(argv[0]);                                      \
 	/*                                                                     \
 	 * Verify that the call to _bytes()                                    \
 	 * does not invalidate the _text() pointer.                            \
 	 */                                                                    \
-	assert(z2 == (char *)sql_value_text(argv[0]));                     \
+	assert(z2 == mem_get_str(argv[0]));                                   \
 	if (!z2)                                                               \
 		return;                                                        \
 	z1 = contextMalloc(context, ((i64) n) + 1);                            \
@@ -1273,8 +1290,8 @@ likeFunc(sql_context *context, int argc, sql_value **argv)
 		context->is_aborted = true;
 		return;
 	}
-	const char *zB = (const char *) sql_value_text(argv[0]);
-	const char *zA = (const char *) sql_value_text(argv[1]);
+	const char *zB = mem_get_str(argv[0]);
+	const char *zA = mem_get_str(argv[1]);
 	const char *zB_end = zB + sql_value_bytes(argv[0]);
 	const char *zA_end = zA + sql_value_bytes(argv[1]);
 
@@ -1293,7 +1310,7 @@ likeFunc(sql_context *context, int argc, sql_value **argv)
 		return;
 	}
 	/* Encoding did not change */
-	assert(zB == (const char *) sql_value_text(argv[0]));
+	assert(zB == mem_get_str(argv[0]));
 
 	if (argc == 3) {
 		/*
@@ -1301,7 +1318,7 @@ likeFunc(sql_context *context, int argc, sql_value **argv)
 		 * single UTF-8 character. Otherwise, return an
 		 * error.
 		 */
-		const unsigned char *zEsc = sql_value_text(argv[2]);
+		const unsigned char *zEsc = mem_get_ustr(argv[2]);
 		if (zEsc == 0)
 			return;
 		if (sql_utf8_char_count(zEsc, sql_value_bytes(argv[2])) != 1) {
@@ -1430,7 +1447,7 @@ quoteFunc(sql_context * context, int argc, sql_value ** argv)
 	case MP_STR:{
 			int i, j;
 			u64 n;
-			const unsigned char *zArg = sql_value_text(argv[0]);
+			const unsigned char *zArg = mem_get_ustr(argv[0]);
 			char *z;
 
 			if (zArg == 0)
@@ -1477,7 +1494,7 @@ quoteFunc(sql_context * context, int argc, sql_value ** argv)
 static void
 unicodeFunc(sql_context * context, int argc, sql_value ** argv)
 {
-	const unsigned char *z = sql_value_text(argv[0]);
+	const unsigned char *z = mem_get_ustr(argv[0]);
 	(void)argc;
 	if (z && z[0])
 		sql_result_uint(context, sqlUtf8Read(&z));
@@ -1596,12 +1613,12 @@ replaceFunc(sql_context * context, int argc, sql_value ** argv)
 
 	assert(argc == 3);
 	UNUSED_PARAMETER(argc);
-	zStr = sql_value_text(argv[0]);
+	zStr = mem_get_ustr(argv[0]);
 	if (zStr == 0)
 		return;
 	nStr = sql_value_bytes(argv[0]);
-	assert(zStr == sql_value_text(argv[0]));	/* No encoding change */
-	zPattern = sql_value_text(argv[1]);
+	assert(zStr == mem_get_ustr(argv[0]));	/* No encoding change */
+	zPattern = mem_get_ustr(argv[1]);
 	if (zPattern == 0) {
 		assert(mem_is_null(argv[1])
 		       || sql_context_db_handle(context)->mallocFailed);
@@ -1613,12 +1630,12 @@ replaceFunc(sql_context * context, int argc, sql_value ** argv)
 		sql_result_value(context, argv[0]);
 		return;
 	}
-	assert(zPattern == sql_value_text(argv[1]));	/* No encoding change */
-	zRep = sql_value_text(argv[2]);
+	assert(zPattern == mem_get_ustr(argv[1]));	/* No encoding change */
+	zRep = mem_get_ustr(argv[2]);
 	if (zRep == 0)
 		return;
 	nRep = sql_value_bytes(argv[2]);
-	assert(zRep == sql_value_text(argv[2]));
+	assert(zRep == mem_get_ustr(argv[2]));
 	nOut = nStr + 1;
 	assert(nOut < SQL_MAX_LENGTH);
 	zOut = contextMalloc(context, (i64) nOut);
@@ -1780,7 +1797,7 @@ trim_func_one_arg(struct sql_context *context, sql_value *arg)
 	else
 		default_trim = (const unsigned char *) " ";
 	int input_str_sz = sql_value_bytes(arg);
-	const unsigned char *input_str = sql_value_text(arg);
+	const unsigned char *input_str = mem_get_ustr(arg);
 	uint8_t trim_char_len[1] = { 1 };
 	trim_procedure(context, TRIM_BOTH, default_trim, trim_char_len, 1,
 		       input_str, input_str_sz);
@@ -1802,7 +1819,7 @@ trim_func_two_args(struct sql_context *context, sql_value *arg1,
 		   sql_value *arg2)
 {
 	const unsigned char *input_str, *trim_set;
-	if ((input_str = sql_value_text(arg2)) == NULL)
+	if ((input_str = mem_get_ustr(arg2)) == NULL)
 		return;
 
 	int input_str_sz = sql_value_bytes(arg2);
@@ -1813,7 +1830,7 @@ trim_func_two_args(struct sql_context *context, sql_value *arg1,
 		mem_get_integer(arg1, &n, &unused);
 		trim_procedure(context, n, (const unsigned char *) " ",
 			       &len_one, 1, input_str, input_str_sz);
-	} else if ((trim_set = sql_value_text(arg1)) != NULL) {
+	} else if ((trim_set = mem_get_ustr(arg1)) != NULL) {
 		int trim_set_sz = sql_value_bytes(arg1);
 		uint8_t *char_len;
 		int char_cnt = trim_prepare_char_len(context, trim_set,
@@ -1839,8 +1856,8 @@ trim_func_three_args(struct sql_context *context, sql_value *arg1,
 {
 	assert(sql_value_type(arg1) == MP_INT || sql_value_type(arg1) == MP_UINT);
 	const unsigned char *input_str, *trim_set;
-	if ((input_str = sql_value_text(arg3)) == NULL ||
-	    (trim_set = sql_value_text(arg2)) == NULL)
+	if ((input_str = mem_get_ustr(arg3)) == NULL ||
+	    (trim_set = mem_get_ustr(arg2)) == NULL)
 		return;
 
 	int trim_set_sz = sql_value_bytes(arg2);
@@ -1915,7 +1932,7 @@ soundexFunc(sql_context * context, int argc, sql_value ** argv)
 		context->is_aborted = true;
 		return;
 	}
-	zIn = (u8 *) sql_value_text(argv[0]);
+	zIn = (u8 *) mem_get_ustr(argv[0]);
 	if (zIn == 0)
 		zIn = (u8 *) "";
 	for (i = 0; zIn[i] && !sqlIsalpha(zIn[i]); i++) {
@@ -2165,7 +2182,7 @@ groupConcatStep(sql_context * context, int argc, sql_value ** argv)
 		pAccum->mxAlloc = db->aLimit[SQL_LIMIT_LENGTH];
 		if (!firstTerm) {
 			if (argc == 2) {
-				zSep = (char *)sql_value_text(argv[1]);
+				zSep = mem_get_str(argv[1]);
 				nSep = sql_value_bytes(argv[1]);
 			} else {
 				zSep = ",";
@@ -2174,7 +2191,7 @@ groupConcatStep(sql_context * context, int argc, sql_value ** argv)
 			if (zSep)
 				sqlStrAccumAppend(pAccum, zSep, nSep);
 		}
-		zVal = (char *)sql_value_text(argv[0]);
+		zVal = mem_get_str(argv[0]);
 		nVal = sql_value_bytes(argv[0]);
 		if (zVal)
 			sqlStrAccumAppend(pAccum, zVal, nVal);

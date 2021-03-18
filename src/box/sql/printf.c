@@ -165,7 +165,11 @@ getTextArg(PrintfArguments * p)
 {
 	if (p->nArg <= p->nUsed)
 		return 0;
-	return (char *)sql_value_text(p->apArg[p->nUsed++]);
+	const char *str;
+	struct Mem *mem = p->apArg[p->nUsed++];
+	if (mem_convert_to_string0(mem) != 0 || mem_get_string0(mem, &str) != 0)
+		return NULL;
+	return (char *)str;
 }
 
 /*

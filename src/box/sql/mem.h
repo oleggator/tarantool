@@ -357,6 +357,9 @@ mem_get_double(const struct Mem *mem, double *d);
 int
 mem_get_boolean(const struct Mem *mem, bool *b);
 
+int
+mem_get_string0(const struct Mem *mem, const char **s);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -407,7 +410,6 @@ registerTrace(int iReg, Mem *p);
 # define memAboutToChange(P,M)
 #endif
 
-int sqlVdbeMemNulTerminate(struct Mem *);
 int sqlVdbeMemExpandBlob(struct Mem *);
 #define ExpandBlob(P) (mem_is_zeroblob(P)? sqlVdbeMemExpandBlob(P) : 0)
 
@@ -438,11 +440,6 @@ sql_value_blob(struct Mem *);
 
 int
 sql_value_bytes(struct Mem *);
-
-const unsigned char *
-sql_value_text(struct Mem *);
-
-const void *sqlValueText(struct Mem *);
 
 #define VdbeFrameMem(p) ((Mem *)&((u8 *)p)[ROUND8(sizeof(VdbeFrame))])
 

@@ -312,8 +312,11 @@ like_optimization_is_valid(Parse *pParse, Expr *pExpr, Expr **ppPrefix,
 		pVal =
 		    sqlVdbeGetBoundValue(pReprepare, iCol,
 					     FIELD_TYPE_SCALAR);
-		if (pVal != NULL && mem_is_string(pVal))
-			z = (char *)sql_value_text(pVal);
+		if (pVal != NULL && mem_is_string(pVal)) {
+			if (mem_convert_to_string0(pVal) != 0 ||
+			    mem_get_string0(pVal, &z) != 0)
+				return -1;
+		}
 		assert(pRight->op == TK_VARIABLE || pRight->op == TK_REGISTER);
 	} else if (op == TK_STRING) {
 		z = pRight->u.zToken;
