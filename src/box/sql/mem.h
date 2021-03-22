@@ -363,6 +363,9 @@ mem_get_string0(const struct Mem *mem, const char **s);
 int
 mem_get_binary(const struct Mem *mem, const char **s);
 
+int
+mem_get_length(const struct Mem *mem);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -380,8 +383,6 @@ mem_mp_type(struct Mem *mem);
 
 enum mp_type
 sql_value_type(struct Mem *);
-
-int sqlValueBytes(struct Mem *);
 
 #ifdef SQL_DEBUG
 void sqlVdbeMemAboutToChange(struct Vdbe *, struct Mem *);
@@ -436,17 +437,7 @@ releaseMemArray(Mem * p, int N);
 #define MemSetTypeFlag(p, f) \
    ((p)->flags = ((p)->flags&~(MEM_TypeMask|MEM_Zero))|f)
 
-/** Getters. */
-
-int
-sql_value_bytes(struct Mem *);
-
 #define VdbeFrameMem(p) ((Mem *)&((u8 *)p)[ROUND8(sizeof(VdbeFrame))])
-
-const Mem *
-columnNullValue(void);
-
-/** Checkers. */
 
 int sqlVdbeMemTooBig(Mem *);
 
