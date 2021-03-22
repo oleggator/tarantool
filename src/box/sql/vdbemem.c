@@ -44,6 +44,8 @@
 #include "box/tuple.h"
 #include "mpstream/mpstream.h"
 
+#if 0
+
 /*
  * Context object passed by sqlStat4ProbeSetValue() through to
  * valueNew(). See comments above valueNew() for details.
@@ -523,6 +525,22 @@ sqlStat4ValueFromExpr(Parse * pParse,	/* Parse context */
 	return stat4ValueFromExpr(pParse, pExpr, type, 0, ppVal);
 }
 
+/**
+ * Extract the col_num-th column from the record.  Write
+ * the column value into *res.  If *res is initially NULL
+ * then a new sql_value object is allocated.
+ *
+ * If *res is initially NULL then the caller is responsible for
+ * ensuring that the value written into *res is eventually
+ * freed.
+ *
+ * @param db Database handle.
+ * @param record Pointer to buffer containing record.
+ * @param col_num Column to extract.
+ * @param[out] res Extracted value.
+ *
+ * @retval -1 on error or 0.
+ */
 int
 sql_stat4_column(struct sql *db, const char *record, uint32_t col_num,
 		 sql_value **res)
@@ -565,3 +583,5 @@ sqlStat4ProbeFree(UnpackedRecord * pRec)
 		sqlDbFree(aMem[0].db, pRec);
 	}
 }
+
+#endif
