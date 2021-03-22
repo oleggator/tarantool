@@ -54,7 +54,7 @@ space:format({ {name = 'id', type = 'unsigned'}, {name = 'year', type = 'unsigne
 index = space:create_index('primary', { parts = {'id'} })
 ---
 ...
-for key = 1, 10000 do space:insert({key, key + 1000}) end
+for key = 1, 20000 do space:insert({key, key + 1000}) end
 ---
 ...
 box.snapshot()
@@ -72,9 +72,6 @@ file = io.open(snapfile, "r")
 ---
 ...
 size = file:seek("end")
----
-...
-if size > 30000 then size = 30000 end
 ---
 ...
 io.close(file)
@@ -108,7 +105,7 @@ test_run:cmd("setopt delimiter ';'")
 ...
 -- check that all data valid
 val = box.space.test:select()
-for i = 1, 10000, 1 do
+for i = 1, 20000, 1 do
     assert(val[i] ~= nil)
 end;
 ---
@@ -127,7 +124,7 @@ os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 - 0
 ...
 -- truncate
-os.execute(string.format('dd if=%s.save of=%s bs=%d count=1', snapfile, snapfile, size))
+os.execute(string.format('dd if=%s.save of=%s bs=%d count=1', snapfile, snapfile, size / 2))
 ---
 - 0
 ...
@@ -166,9 +163,8 @@ os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 file = io.open(snapfile, "r+b")
 ---
 ...
-file:seek("set", size)
+_ = file:seek("set", size / 2)
 ---
-- 30000
 ...
 for i = 1, 100, 1 do file:write(math.random(1,254)) end
 ---
@@ -212,9 +208,8 @@ os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 file = io.open(snapfile, "r+b")
 ---
 ...
-file:seek("set", size / 2 + 8000)
+_ = file:seek("set", size / 2)
 ---
-- 23000
 ...
 for i = 1, 10000, 1 do file:write(math.random(1,254)) end
 ---
@@ -266,9 +261,8 @@ os.execute(string.format('rm %s.save', snapfile))
 file = io.open(snapfile, "r+b")
 ---
 ...
-file:seek("set", size / 2)
+_ = file:seek("set", 15000)
 ---
-- 15000
 ...
 for i = 1, 1000, 1 do file:write(math.random(1,254)) end
 ---

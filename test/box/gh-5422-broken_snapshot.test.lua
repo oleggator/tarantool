@@ -28,14 +28,13 @@ space = box.schema.space.create('test', { engine = "memtx" })
 space:format({ {name = 'id', type = 'unsigned'}, {name = 'year', type = 'unsigned'} })
 index = space:create_index('primary', { parts = {'id'} })
 
-for key = 1, 10000 do space:insert({key, key + 1000}) end
+for key = 1, 20000 do space:insert({key, key + 1000}) end
 box.snapshot()
 
 test_run:cmd("switch default")
 snapfile = get_snap_file()
 file = io.open(snapfile, "r")
 size = file:seek("end")
-if size > 30000 then size = 30000 end
 io.close(file)
 
 -- save last snapshot
@@ -49,7 +48,7 @@ test_run:cmd("restart server test with script='box/gh-5422-broken_snapshot.lua'"
 test_run:cmd("setopt delimiter ';'")
 -- check that all data valid
 val = box.space.test:select()
-for i = 1, 10000, 1 do
+for i = 1, 20000, 1 do
     assert(val[i] ~= nil)
 end;
 test_run:cmd("setopt delimiter ''");
@@ -57,7 +56,7 @@ test_run:cmd("switch default")
 -- restore snapshot
 os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 -- truncate
-os.execute(string.format('dd if=%s.save of=%s bs=%d count=1', snapfile, snapfile, size))
+os.execute(string.format('dd if=%s.save of=%s bs=%d count=1', snapfile, snapfile, size / 2))
 
 test_run:cmd("switch test")
 test_run:cmd("restart server test with script='box/gh-5422-broken_snapshot.lua'")
@@ -74,7 +73,7 @@ test_run:cmd("switch default")
 os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 -- write garbage at the middle of file
 file = io.open(snapfile, "r+b")
-file:seek("set", size)
+_ = file:seek("set", size / 2)
 for i = 1, 100, 1 do file:write(math.random(1,254)) end
 io.close(file)
 test_run:cmd("switch test")
@@ -91,7 +90,7 @@ test_run:cmd("switch default")
 os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 -- write big garbage at the middle of file, check that start data valid
 file = io.open(snapfile, "r+b")
-file:seek("set", size / 2 + 8000)
+_ = file:seek("set", size / 2)
 for i = 1, 10000, 1 do file:write(math.random(1,254)) end
 io.close(file)
 test_run:cmd("switch test")
@@ -111,7 +110,7 @@ os.execute(string.format('cp %s.save %s', snapfile, snapfile))
 os.execute(string.format('rm %s.save', snapfile))
 -- write big garbage at the start of file
 file = io.open(snapfile, "r+b")
-file:seek("set", size / 2)
+_ = file:seek("set", 15000)
 for i = 1, 1000, 1 do file:write(math.random(1,254)) end
 io.close(file)
 test_run:cmd("start server test with crash_expected=True")
