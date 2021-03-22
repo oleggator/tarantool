@@ -360,6 +360,9 @@ mem_get_boolean(const struct Mem *mem, bool *b);
 int
 mem_get_string0(const struct Mem *mem, const char **s);
 
+int
+mem_get_binary(const struct Mem *mem, const char **s);
+
 /**
  * Simple type to str convertor. It is used to simplify
  * error reporting.
@@ -434,9 +437,6 @@ releaseMemArray(Mem * p, int N);
    ((p)->flags = ((p)->flags&~(MEM_TypeMask|MEM_Zero))|f)
 
 /** Getters. */
-
-const void *
-sql_value_blob(struct Mem *);
 
 int
 sql_value_bytes(struct Mem *);
