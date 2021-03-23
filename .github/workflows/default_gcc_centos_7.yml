@@ -34,7 +34,7 @@ jobs:
           # Our testing expects that the init process (PID 1) will
           # reap orphan processes. At least the following test leans
           # on it: app-tap/gh-4983-tnt-e-assert-false-hangs.test.lua.
-          PACKPACK_EXTRA_DOCKER_RUN_PARAMS: '--init -e CC=/usr/bin/gcc -e CXX=/usr/bin/g++'
+          PACKPACK_EXTRA_DOCKER_RUN_PARAMS: '--init --memory=7G --memory-swap=7G -e CC=/usr/bin/gcc -e CXX=/usr/bin/g++'
         run: OS=el DIST=7 ${CI_MAKE} package
       - name: call action to send Telegram message on failure
         env:

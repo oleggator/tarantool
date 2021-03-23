@@ -292,7 +292,7 @@ test_oos_build:
 	# reap orphan processes. At least the following test leans
 	# on it: app-tap/gh-4983-tnt-e-assert-false-hangs.test.lua.
 	docker run --network=host -w ${OOS_SRC_PATH} \
-		--init \
+		--init --memory=7G --memory-swap=7G \
 		--mount type=bind,source="${PWD}",target=${OOS_SRC_PATH},readonly,bind-propagation=rslave \
 		-v ${PWD}/artifacts:${OOS_BUILD_PATH}/test/var/artifacts \
 		${DOCKER_ENV} \
