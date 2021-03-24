@@ -24,13 +24,13 @@ jobs:
       # Our testing expects that the init process (PID 1) will
       # reap orphan processes. At least the following test leans
       # on it: app-tap/gh-4983-tnt-e-assert-false-hangs.test.lua.
-      options: '--init --memory=8G --memory-swap=8G'
+      options: '--init'
 
     steps:
       - uses: actions/checkout@v1
       - uses: ./.github/actions/environment
       - name: test
-        run: ${CI_MAKE} test_debian_no_deps
+        run: cat /sys/fs/cgroup/memory/memory.swappiness
       - name: call action to send Telegram message on failure
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_CORE_TOKEN }}
