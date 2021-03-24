@@ -1,0 +1,28 @@
+-- test-run result file version 2
+--box.cfg{}
+test_run = require('test_run')
+ | ---
+ | ...
+inspector = test_run.new()
+ | ---
+ | ...
+
+space = box.schema.space.create('test', {engine = 'memtx'})
+ | ---
+ | ...
+
+index = space:create_index('primary', { type = 'tree', parts = {1, 'unsigned'} })
+ | ---
+ | ...
+
+for key = 1,10 do space:replace({key}) end
+ | ---
+ | ...
+
+t = {} for state, v in index:pairs({}, {iterator = 'ALL'}) do table.insert(t, v) end
+ | ---
+ | ...
+
+space:drop()
+ | ---
+ | ...
