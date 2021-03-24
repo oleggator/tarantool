@@ -24,9 +24,11 @@ jobs:
       fail-fast: false
 
     steps:
-      - name: disable swap and cleanup sources repository
+      - name: install needed packages, disable swap and cleanup sources repository
         shell: bash
         run: |
+          sudo apt update -y
+          sudo apt install libreadline-dev -y
           sudo /bin/bash -c "echo 0 >/sys/fs/cgroup/memory/memory.swappiness"
           [ ! -d .git ] || sudo /bin/bash -c "git clean -xfd && git submodule foreach git clean -xfd"
       - uses: actions/checkout@v2.3.4
