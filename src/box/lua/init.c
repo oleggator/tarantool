@@ -48,6 +48,7 @@
 #include "box/lua/tuple.h"
 #include "box/lua/call.h"
 #include "box/lua/slab.h"
+#include "box/lua/sysalloc.h"
 #include "box/lua/index.h"
 #include "box/lua/space.h"
 #include "box/lua/sequence.h"
@@ -466,6 +467,7 @@ box_lua_init(struct lua_State *L)
 	box_lua_call_init(L);
 	box_lua_cfg_init(L);
 	box_lua_slab_init(L);
+	box_lua_sysalloc_init(L);
 	box_lua_index_init(L);
 	box_lua_space_init(L);
 	box_lua_sequence_init(L);

@@ -199,6 +199,7 @@ add_library(box STATIC
     lua/serialize_lua.c
     lua/tuple.c
     lua/slab.c
+    lua/sysalloc.c
     lua/index.c
     lua/space.cc
     lua/sequence.c
