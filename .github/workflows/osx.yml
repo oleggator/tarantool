@@ -12,6 +12,7 @@ jobs:
     steps:
       - name: packaging
         run: |
+            sudo ls -lh /private/var/vm/
             sudo /usr/sbin/system_profiler SPHardwareDataType
             sudo df -lh
             sudo lsblk
