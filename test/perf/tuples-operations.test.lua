@@ -11,6 +11,8 @@ env = require('test_run')
 clock = require('clock')
 test_run = env.new()
 
+box.cfg{ wal_mode='none' }
+
 objcount = 10000
 test_run:cmd("setopt delimiter ';'")
 function benchmark(op, count, space, result)

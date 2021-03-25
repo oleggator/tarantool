@@ -18,6 +18,10 @@ test_run = env.new()
  | ---
  | ...
 
+box.cfg{ wal_mode='none' }
+ | ---
+ | ...
+
 objcount = 10000
  | ---
  | ...
