@@ -127,7 +127,7 @@ add_library(box STATIC
     memtx_bitset.c
     memtx_tx.c
     engine.c
-    memtx_engine.c
+    memtx_engine.cc
     memtx_space.c
     sysview.c
     blackhole.c
