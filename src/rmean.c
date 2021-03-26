@@ -32,9 +32,6 @@
 
 #include "fiber.h"
 
-/**
- * This function should be called only from tx thread
- */
 void
 rmean_roll(int64_t *value, double dt)
 {
@@ -48,9 +45,6 @@ rmean_roll(int64_t *value, double dt)
 	__atomic_store_n(&value[0], 0, __ATOMIC_RELAXED);
 }
 
-/**
- * This function should be called only from tx thread
- */
 int64_t
 rmean_mean(struct rmean *rmean, size_t name)
 {
@@ -71,9 +65,6 @@ rmean_collect(struct rmean *rmean, size_t name, int64_t value)
 	__atomic_add_fetch(&rmean->stats[name].total, value, __ATOMIC_RELAXED);
 }
 
-/**
- * This function should be called only from tx thread
- */
 int
 rmean_foreach(struct rmean *rmean, rmean_cb cb, void *cb_ctx)
 {
@@ -110,11 +101,6 @@ rmean_age(ev_loop *loop,
 	ev_timer_again(loop, timer);
 }
 
-/**
- * This function should be called from the tx thread only
- * to work correctly with the fields of the rmean structure
- * from multiple threads.
- */
 struct rmean *
 rmean_new(const char **name, size_t n)
 {
