@@ -319,7 +319,7 @@ session_run_on_connect_triggers(struct session *session);
 void
 session_run_on_disconnect_triggers(struct session *session);
 
-/** Run 0n-shutdown triggers */
+/** Run On-shutdown triggers */
 void
 session_run_on_shutdown_triggers(struct session *session);
 

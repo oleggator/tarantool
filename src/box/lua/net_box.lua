@@ -99,6 +99,7 @@ end
 
 local method_encoder = {
     ping    = internal.encode_ping,
+    shutdown = internal.encode_shutdown,
     call_16 = internal.encode_call_16,
     call_17 = internal.encode_call,
     eval    = internal.encode_eval,
@@ -125,6 +126,7 @@ local method_encoder = {
 
 local method_decoder = {
     ping    = decode_nil,
+    shutdown = decode_nil,
     call_16 = internal.decode_select,
     call_17 = decode_data,
     eval    = decode_data,
@@ -1216,6 +1218,11 @@ function remote_methods:ping(opts)
     return (pcall(self._request, self, 'ping', opts))
 end
 
+function remote_methods:shutdown(opts)
+    check_remote_arg(self, 'shutdown')
+    return (pcall(self._request, self, 'shutdown', opts))
+end
+
 function remote_methods:reload_schema()
     check_remote_arg(self, 'reload_schema')
     self:ping()
@@ -1630,6 +1637,7 @@ end
 
 this_module.self = {
     ping = function() return true end,
+    shutdown = function() end,
     reload_schema = function() end,
     close = function() end,
     timeout = function(self) return self end,
