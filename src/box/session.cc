@@ -138,6 +138,7 @@ session_create(enum session_type type)
 
 	session->id = sid_max();
 	memset(&session->meta, 0, sizeof(session->meta));
+	session->graceful_shutdown = false;
 	session_set_type(session, type);
 	session->sql_flags = default_flags;
 	session->sql_default_engine = SQL_STORAGE_ENGINE_MEMTX;

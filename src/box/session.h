@@ -114,6 +114,8 @@ struct session {
 	const struct session_vtab *vtab;
 	/** Session metadata. */
 	struct session_meta meta;
+	/** Graceful shutdown support. */
+	bool graceful_shutdown;
 	/**
 	 * ID of statements prepared in current session.
 	 * This map is allocated on demand.

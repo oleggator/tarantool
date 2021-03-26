@@ -36,6 +36,7 @@
 #include <msgpuck.h>
 #include <small/ibuf.h>
 #include <small/obuf.h>
+#include <on_shutdown.h>
 #include "third_party/base64.h"
 
 #include "version.h"
@@ -485,6 +486,7 @@ struct iproto_connection
 	 */
 	enum iproto_connection_state state;
 	struct rlist in_stop_list;
+	struct rlist in_open_list;
 	/**
 	 * Kharon is used to implement box.session.push().
 	 * When a new push is ready, tx uses kharon to notify
@@ -538,6 +540,7 @@ struct iproto_connection
 
 static struct mempool iproto_connection_pool;
 static RLIST_HEAD(stopped_connections);
+static RLIST_HEAD(open_connections);
 
 /**
  * Return true if we have not enough spare messages
@@ -687,6 +690,7 @@ iproto_connection_close(struct iproto_connection *con)
 		assert(con->state == IPROTO_CONNECTION_CLOSED);
 	}
 	rlist_del(&con->in_stop_list);
+	rlist_del(&con->in_open_list);
 }
 
 static inline struct ibuf *
@@ -1116,6 +1120,7 @@ iproto_connection_new(int fd)
 	con->long_poll_count = 0;
 	con->session = NULL;
 	rlist_create(&con->in_stop_list);
+	rlist_create(&con->in_open_list);
 	/* It may be very awkward to allocate at close. */
 	cmsg_init(&con->destroy_msg, destroy_route);
 	cmsg_init(&con->disconnect_msg, disconnect_route);
@@ -1123,6 +1128,7 @@ iproto_connection_new(int fd)
 	con->tx.is_push_pending = false;
 	con->tx.is_push_sent = false;
 	rmean_collect(rmean_net, IPROTO_CONNECTIONS, 1);
+	rlist_add_entry(&open_connections, con, in_open_list);
 	return con;
 }
 
@@ -1288,6 +1294,7 @@ iproto_msg_decode(struct iproto_msg *msg, const char **pos, const char *reqend,
 			goto error;
 		cmsg_init(&msg->base, sql_route);
 		break;
+	case IPROTO_SHUTDOWN:
 	case IPROTO_PING:
 		cmsg_init(&msg->base, misc_route);
 		break;
@@ -2184,11 +2191,32 @@ iproto_session_push(struct session *session, struct port *port)
 
 /** }}} */
 
+static int
+graceful_shutdown(void *arg)
+{
+        (void) arg;
+        if (evio_service_is_active(&binary))
+                evio_service_stop(&binary);
+        struct iproto_connection *connection;
+        rlist_foreach_entry(connection, &open_connections, in_open_list) {
+                if (connection->session->graceful_shutdown) {
+                        //@todo
+                } else {
+                        shutdown(connection->session->meta.fd, SHUT_RD);
+                }
+        }
+
+        return 0;
+}
+
 /** Initialize the iproto subsystem and start network io thread */
 void
 iproto_init(void)
 {
 	slab_cache_create(&net_slabc, &runtime);
+
+        if (box_on_shutdown(NULL, graceful_shutdown, NULL) != 0)
+                panic("failed to register iproto shutdown function");
 
 	if (cord_costart(&net_cord, "iproto", net_cord_f, NULL))
 		panic("failed to initialize iproto thread");
