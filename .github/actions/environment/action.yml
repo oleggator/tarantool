@@ -8,4 +8,9 @@ runs:
         echo TEST_TIMEOUT=310 | tee -a $GITHUB_ENV
         echo NO_OUTPUT_TIMEOUT=320 | tee -a $GITHUB_ENV
         echo PRESERVE_ENVVARS=REPLICATION_SYNC_TIMEOUT,TEST_TIMEOUT,NO_OUTPUT_TIMEOUT | tee -a $GITHUB_ENV
+        # Drop a tag that points to a current commit (if any)
+        # on a job triggered by pushing to a branch.
+        if git describe --exact-match HEAD && ${{ ! startsWith(github.ref, 'refs/tags/') }} ; then
+            git tag -d "$(git tag --points-at HEAD)" 2>/dev/null
+        fi
       shell: bash
