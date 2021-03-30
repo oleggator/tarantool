@@ -281,7 +281,7 @@ lbox_session_peer(struct lua_State *L)
 }
 
 /**
- * run on_connect|on_disconnect trigger
+ * run on_connect|on_disconnect|on_shutdown trigger
  */
 static int
 lbox_push_on_connect_event(struct lua_State *L, void *event)
@@ -324,12 +324,28 @@ lbox_session_on_disconnect(struct lua_State *L)
 }
 
 static int
+lbox_session_on_shutdown(struct lua_State *L)
+{
+        return lbox_trigger_reset(L, 2, &session_on_shutdown,
+                                  lbox_push_on_connect_event, NULL);
+}
+
+static int
 lbox_session_run_on_disconnect(struct lua_State *L)
 {
 	struct session *session = current_session();
 	session_run_on_disconnect_triggers(session);
 	(void) L;
 	return 0;
+}
+
+static int
+lbox_session_run_on_shutdown(struct lua_State *L)
+{
+        struct session *session = current_session();
+        session_run_on_shutdown_triggers(session);
+        (void) L;
+        return 0;
 }
 
 static int
@@ -547,6 +563,7 @@ box_lua_session_init(struct lua_State *L)
 		{"create", lbox_session_create},
 		{"run_on_connect",    lbox_session_run_on_connect},
 		{"run_on_disconnect", lbox_session_run_on_disconnect},
+                {"run_on_shutdown", lbox_session_run_on_shutdown},
 		{"run_on_auth", lbox_session_run_on_auth},
 		{NULL, NULL}
 	};
@@ -567,6 +584,7 @@ box_lua_session_init(struct lua_State *L)
 		{"peer", lbox_session_peer},
 		{"on_connect", lbox_session_on_connect},
 		{"on_disconnect", lbox_session_on_disconnect},
+                {"on_shutdown", lbox_session_on_shutdown},
 		{"on_auth", lbox_session_on_auth},
 		{"on_access_denied", lbox_session_on_access_denied},
 		{"push", lbox_session_push},

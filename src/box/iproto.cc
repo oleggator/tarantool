@@ -251,11 +251,7 @@ iproto_msg_decode(struct iproto_msg *msg, const char **pos, const char *reqend,
 		  bool *stop_input);
 
 static inline void
-iproto_msg_delete(struct iproto_msg *msg)
-{
-	mempool_free(&iproto_msg_pool, msg);
-	iproto_resume();
-}
+iproto_msg_delete(struct iproto_msg *msg);
 
 /**
  * A single global queue for all requests in all connections. All
@@ -460,6 +456,8 @@ struct iproto_connection
 	 * connections.
 	 */
 	int long_poll_count;
+	/** Number of requests in flight. */
+	int requests_count;
 	struct ev_io input;
 	struct ev_io output;
 	/** Logical session. */
@@ -572,6 +570,14 @@ iproto_msg_new(struct iproto_connection *con)
 	msg->connection = con;
 	rmean_collect(rmean_net, IPROTO_REQUESTS, 1);
 	return msg;
+}
+
+static inline void
+iproto_msg_delete(struct iproto_msg *msg)
+{
+        msg->connection->requests_count--;
+        mempool_free(&iproto_msg_pool, msg);
+        iproto_resume();
 }
 
 /**
@@ -1118,6 +1124,7 @@ iproto_connection_new(int fd)
 	iproto_wpos_create(&con->wend, con->tx.p_obuf);
 	con->parse_size = 0;
 	con->long_poll_count = 0;
+	con->requests_count = 0;
 	con->session = NULL;
 	rlist_create(&con->in_stop_list);
 	rlist_create(&con->in_open_list);
@@ -1194,6 +1201,9 @@ net_end_join(struct cmsg *msg);
 static void
 net_end_subscribe(struct cmsg *msg);
 
+static void
+shutdown_recieve(struct cmsg *m);
+
 static const struct cmsg_hop misc_route[] = {
 	{ tx_process_misc, &net_pipe },
 	{ net_send_msg, NULL },
@@ -1251,6 +1261,11 @@ static const struct cmsg_hop error_route[] = {
 	{ net_send_error, NULL },
 };
 
+static const struct cmsg_hop recieve_shutdown_route[] = {
+        { shutdown_recieve, &tx_pipe },
+        { net_send_msg, NULL },
+};
+
 static void
 iproto_msg_decode(struct iproto_msg *msg, const char **pos, const char *reqend,
 		  bool *stop_input)
@@ -1295,6 +1310,8 @@ iproto_msg_decode(struct iproto_msg *msg, const char **pos, const char *reqend,
 		cmsg_init(&msg->base, sql_route);
 		break;
 	case IPROTO_SHUTDOWN:
+	        cmsg_init(&msg->base, recieve_shutdown_route);
+                break;
 	case IPROTO_PING:
 		cmsg_init(&msg->base, misc_route);
 		break;
@@ -2191,6 +2208,39 @@ iproto_session_push(struct session *session, struct port *port)
 
 /** }}} */
 
+static void
+prepare_shutdown_msg(struct cmsg *m)
+{
+        struct iproto_msg *msg = (struct iproto_msg *) m;
+        struct iproto_connection *con = msg->connection;
+        struct obuf *out = con->tx.p_obuf;
+        msg->header.type = IPROTO_SHUTDOWN;
+        iproto_reply_ok_xc(out, msg->header.sync, ::schema_version);
+        iproto_wpos_create(&msg->wpos, out);
+}
+
+static const cmsg_hop shutdown_send_route[] = {
+        {prepare_shutdown_msg, &net_pipe},
+        {net_send_msg, NULL},
+};
+
+static void
+shutdown_recieve(struct cmsg *m)
+{
+        struct iproto_msg *msg = (struct iproto_msg *) m;
+        struct iproto_connection *con = msg->connection;
+        con->session->graceful_shutdown = true;
+        if (! rlist_empty(&session_on_shutdown)) {
+                tx_fiber_init(con->session, 0);
+                session_run_on_shutdown_triggers(con->session);
+        }
+        shutdown(con->session->meta.fd, SHUT_RD);
+        while (con->requests_count > 0) {
+                fiber_yield();
+        }
+        cmsg_init(&msg->base, shutdown_send_route);
+}
+
 static int
 graceful_shutdown(void *arg)
 {
@@ -2199,13 +2249,27 @@ graceful_shutdown(void *arg)
                 evio_service_stop(&binary);
         struct iproto_connection *connection;
         rlist_foreach_entry(connection, &open_connections, in_open_list) {
+                if (! rlist_empty(&session_on_shutdown)) {
+                        tx_fiber_init(connection->session, 0);
+                        session_run_on_shutdown_triggers(connection->session);
+                }
                 if (connection->session->graceful_shutdown) {
-                        //@todo
+                        struct iproto_msg *msg = iproto_msg_new(connection);
+                        msg->header.type = IPROTO_SHUTDOWN;
+                        cmsg_init(&msg->base, shutdown_send_route);
                 } else {
+                        iproto_enqueue_batch(connection, connection->p_ibuf);
                         shutdown(connection->session->meta.fd, SHUT_RD);
                 }
         }
 
+        while (iproto_connection_count() > 0) {
+                rlist_foreach_entry(connection, &open_connections, in_open_list) {
+                        if (connection->requests_count == 0 && connection->session->graceful_shutdown)
+                                iproto_connection_close(connection);
+                }
+                fiber_yield();
+        }
         return 0;
 }
 

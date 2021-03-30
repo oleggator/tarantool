@@ -69,6 +69,7 @@ struct mempool session_pool;
 
 RLIST_HEAD(session_on_connect);
 RLIST_HEAD(session_on_disconnect);
+RLIST_HEAD(session_on_shutdown);
 RLIST_HEAD(session_on_auth);
 
 static inline uint64_t
@@ -240,6 +241,13 @@ session_run_on_disconnect_triggers(struct session *session)
 {
 	if (session_run_triggers(session, &session_on_disconnect) != 0)
 		diag_log();
+}
+
+void
+session_run_on_shutdown_triggers(struct session *session)
+{
+        if (session_run_triggers(session, &session_on_shutdown) != 0)
+                diag_log();
 }
 
 int

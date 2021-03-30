@@ -267,6 +267,8 @@ effective_user(void)
 
 /** Global on-disconnect triggers. */
 extern struct rlist session_on_disconnect;
+/** Global on-shutdown triggers. */
+extern struct rlist session_on_shutdown;
 
 void
 session_storage_cleanup(int sid);
@@ -316,6 +318,10 @@ session_run_on_connect_triggers(struct session *session);
 /** Run on-disconnect triggers */
 void
 session_run_on_disconnect_triggers(struct session *session);
+
+/** Run 0n-shutdown triggers */
+void
+session_run_on_shutdown_triggers(struct session *session);
 
 /** Run auth triggers */
 int
