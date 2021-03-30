@@ -82,6 +82,20 @@ docker_%:
 # commit, so the build requires old dependencies to be installed.
 # See ce623a23416eb192ce70116fd14992e84e7ccbbe ('Enable GitLab CI
 # testing') for more information.
+deps_ubuntu_ghactions:
+	sudo apt-get update ${APT_EXTRA_FLAGS} && \
+		sudo apt-get install -y -f libreadline-dev libunwind-dev
+	pip install -r test-run/requirements.txt
+
+deps_coverage_ubuntu_ghactions: deps_ubuntu_ghactions
+	sudo apt-get install -y -f lcov
+	sudo gem install coveralls-lcov
+	# Link src/lib/uri/src to local src dircetory to avoid of issue:
+	# /var/lib/gems/2.7.0/gems/coveralls-lcov-1.7.0/lib/coveralls/lcov/converter.rb:64:in
+	#   `initialize': No such file or directory @ rb_sysopen -
+	#   /home/runner/work/tarantool/tarantool/src/lib/uri/src/lib/uri/uri.c (Errno::ENOENT)
+	ln -s ${PWD}/src src/lib/uri/src
+	
 deps_debian:
 	apt-get update ${APT_EXTRA_FLAGS} && apt-get install -y -f \
 		build-essential cmake coreutils sed \
@@ -139,6 +153,8 @@ test_debian_no_deps: build_debian
 
 test_debian: deps_debian test_debian_no_deps
 
+test_ubuntu_ghactions: deps_ubuntu_ghactions test_debian_no_deps
+
 test_debian_clang11: deps_debian deps_buster_clang_11 test_debian_no_deps
 
 # Debug with coverage
@@ -159,7 +175,6 @@ test_coverage_debian_no_deps: build_coverage_debian
 	# coveralls API: https://docs.coveralls.io/api-reference
 	@if [ -n "$(COVERALLS_TOKEN)" ]; then \
 		echo "Exporting code coverage information to coveralls.io"; \
-		gem install coveralls-lcov; \
 		echo coveralls-lcov --service-name github-ci --service-job-id $(GITHUB_RUN_ID) \
 			--repo-token [FILTERED] coverage.info; \
 		coveralls-lcov --service-name github-ci --service-job-id $(GITHUB_RUN_ID) \
@@ -167,6 +182,8 @@ test_coverage_debian_no_deps: build_coverage_debian
 	fi;
 
 coverage_debian: deps_debian test_coverage_debian_no_deps
+
+coverage_ubuntu_ghactions: deps_coverage_ubuntu_ghactions test_coverage_debian_no_deps
 
 # Coverity
 
@@ -223,6 +240,8 @@ test_asan_debian_no_deps: build_asan_debian
 
 test_asan_debian: deps_debian deps_buster_clang_11 test_asan_debian_no_deps
 
+test_asan_ubuntu_ghactions: deps_ubuntu_ghactions test_asan_debian_no_deps
+
 # Static build
 
 deps_debian_static:
@@ -231,7 +250,7 @@ deps_debian_static:
 	# while liblzma dynamic library exists. So the build dynamicaly has no
 	# issues, while static build fails. To fix it we need to install
 	# liblzma-dev package with static library only for static build.
-	apt-get install -y -f liblzma-dev
+	sudo apt-get install -y -f liblzma-dev
 
 test_static_build: deps_debian_static
 	CMAKE_EXTRA_PARAMS=-DBUILD_STATIC=ON make -f .travis.mk test_debian_no_deps
@@ -262,9 +281,9 @@ test_debian_docker_luacheck:
 		make -f .travis.mk test_debian_luacheck
 
 test_debian_install_luacheck:
-	apt update -y
-	apt install -y lua5.1 luarocks
-	luarocks install luacheck
+	sudo apt update -y
+	sudo apt install -y lua5.1 luarocks
+	sudo luarocks install luacheck
 
 test_debian_luacheck: test_debian_install_luacheck configure_debian
 	make luacheck
