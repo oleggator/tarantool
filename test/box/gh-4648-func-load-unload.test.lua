@@ -36,7 +36,8 @@ box.schema.func.drop('function1')
 check_module_count_diff(-1)
 
 -- A not finished invocation of a function from a module prevents
--- its unload. Until the call is finished.
+-- low level module intance unload while schema level module is
+-- free to unload immediately when dropped.
 box.schema.func.create('function1', {language = 'C'})
 box.schema.func.create('function1.test_sleep', {language = 'C'})
 check_module_count_diff(0)
@@ -52,7 +53,7 @@ box.func.function1:call()
 check_module_count_diff(1)
 box.schema.func.drop('function1')
 box.schema.func.drop('function1.test_sleep')
-check_module_count_diff(0)
+check_module_count_diff(-1)
 
 f1:cancel()
 test_run:wait_cond(function() return f1:status() == 'dead' end)
@@ -60,4 +61,4 @@ check_module_count_diff(0)
 
 f2:cancel()
 test_run:wait_cond(function() return f2:status() == 'dead' end)
-check_module_count_diff(-1)
+check_module_count_diff(0)
