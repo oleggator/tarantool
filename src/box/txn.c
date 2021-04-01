@@ -551,6 +551,20 @@ txn_complete_success(struct txn *txn)
 		engine_commit(txn->engine, txn);
 	if (txn_has_flag(txn, TXN_HAS_TRIGGERS))
 		txn_run_commit_triggers(txn, &txn->on_commit);
+
+	/* The time has come to run on_replace_commit triggers. */
+	struct txn_stmt *stmt;
+	stailq_foreach_entry(stmt, &txn->stmts, next) {
+		if (stmt->space == NULL || !stmt->space->run_triggers ||
+		    (stmt->old_tuple == NULL && stmt->new_tuple == NULL))
+			continue;
+		if (trigger_run(&stmt->space->on_replace_commit, stmt) != 0) {
+			/* Can't fail, log and clear. */
+			diag_log();
+			diag_clear(diag_get());
+		}
+	}
+
 	txn_free_or_wakeup(txn);
 }
 

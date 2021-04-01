@@ -82,6 +82,27 @@ lbox_push_txn_stmt(struct lua_State *L, void *event)
 }
 
 static int
+lbox_push_stmt(struct lua_State *L, void *event)
+{
+	struct txn_stmt *stmt = (struct txn_stmt *) event;
+
+	if (stmt->old_tuple) {
+		luaT_pushtuple(L, stmt->old_tuple);
+	} else {
+		lua_pushnil(L);
+	}
+	if (stmt->new_tuple) {
+		luaT_pushtuple(L, stmt->new_tuple);
+	} else {
+		lua_pushnil(L);
+	}
+	/* @todo: maybe the space object has to be here */
+	lua_pushstring(L, stmt->space->def->name);
+	lua_pushstring(L, NULL);
+	return 4;
+}
+
+static int
 lbox_pop_txn_stmt(struct lua_State *L, int nret, void *event)
 {
 	struct txn_stmt *stmt = txn_current_stmt((struct txn *) event);
@@ -127,6 +148,27 @@ lbox_space_on_replace(struct lua_State *L)
 
 	return lbox_trigger_reset(L, 3, &space->on_replace,
 				  lbox_push_txn_stmt, NULL);
+}
+
+/**
+ * Set/Reset/Get space.on_replace_commit trigger
+ */
+static int
+lbox_space_on_replace_commit(struct lua_State *L)
+{
+	int top = lua_gettop(L);
+
+	if (top < 1 || !lua_istable(L, 1)) {
+		luaL_error(L,
+	   "usage: space:on_replace_commit(function | nil, [function | nil])");
+	}
+	lua_getfield(L, 1, "id"); /* Get space id. */
+	uint32_t id = lua_tonumber(L, lua_gettop(L));
+	struct space *space = space_cache_find_xc(id);
+	lua_pop(L, 1);
+
+	return lbox_trigger_reset(L, 3, &space->on_replace_commit,
+				  lbox_push_stmt, NULL);
 }
 
 /**
@@ -264,11 +306,15 @@ lbox_fillspace(struct lua_State *L, struct space *space, int i)
 
 
         /* space:on_replace */
-        lua_pushstring(L, "on_replace");
-        lua_pushcfunction(L, lbox_space_on_replace);
-        lua_settable(L, i);
+	lua_pushstring(L, "on_replace");
+	lua_pushcfunction(L, lbox_space_on_replace);
+	lua_settable(L, i);
 
-        /* space:before_replace */
+	lua_pushstring(L, "on_replace_commit");
+	lua_pushcfunction(L, lbox_space_on_replace_commit);
+	lua_settable(L, i);
+
+	/* space:before_replace */
         lua_pushstring(L, "before_replace");
         lua_pushcfunction(L, lbox_space_before_replace);
         lua_settable(L, i);

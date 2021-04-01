@@ -141,6 +141,7 @@ space_create(struct space *space, struct engine *engine,
 	space->index_id_max = index_id_max;
 	rlist_create(&space->before_replace);
 	rlist_create(&space->on_replace);
+	rlist_create(&space->on_replace_commit);
 	space->run_triggers = true;
 
 	space->format = format;
@@ -267,6 +268,7 @@ space_delete(struct space *space)
 		tuple_format_unref(space->format);
 	trigger_destroy(&space->before_replace);
 	trigger_destroy(&space->on_replace);
+	trigger_destroy(&space->on_replace_commit);
 	space_def_delete(space->def);
 	/*
 	 * SQL triggers and constraints should be deleted with
