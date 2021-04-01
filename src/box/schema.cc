@@ -372,6 +372,13 @@ schema_init(void)
 	funcs = mh_i32ptr_new();
 	funcs_by_name = mh_strnptr_new();
 	sequences = mh_i32ptr_new();
+
+	if (spaces == NULL || spaces_by_name == NULL ||
+	    funcs == NULL || funcs_by_name == NULL ||
+	    sequences == NULL) {
+		panic("Can't allocate schema hashes");
+	}
+
 	/*
 	 * Create surrogate space objects for the mandatory system
 	 * spaces (the primal eggs from which we get all the
