@@ -266,6 +266,23 @@ coio_wait(int fd, int event, double timeout);
 API_EXPORT int
 coio_close(int fd);
 
+struct coio_waker;
+
+API_EXPORT struct coio_waker *
+coio_waker_new(void);
+
+API_EXPORT void
+coio_waker_wait_timeout(struct coio_waker *waker, double timeout);
+
+API_EXPORT void
+coio_waker_wait(struct coio_waker *waker);
+
+API_EXPORT void
+coio_waker_wake(struct coio_waker *waker);
+
+API_EXPORT void
+coio_waker_delete(struct coio_waker *waker);
+
 /** \endcond public */
 
 /**
