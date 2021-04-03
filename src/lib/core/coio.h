@@ -271,10 +271,10 @@ struct coio_waker;
 API_EXPORT struct coio_waker *
 coio_waker_new(void);
 
-API_EXPORT void
+API_EXPORT bool
 coio_waker_wait_timeout(struct coio_waker *waker, double timeout);
 
-API_EXPORT void
+API_EXPORT bool
 coio_waker_wait(struct coio_waker *waker);
 
 API_EXPORT void

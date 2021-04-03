@@ -781,18 +781,18 @@ coio_close(int fd)
 }
 
 struct coio_waker {
-	struct ev_loop *loop;
-	struct coio_wdata wdata;
 	struct ev_async watcher;
+	struct ev_loop *loop;
+	struct fiber *fiber;
 };
 
 static void
 coio_waker_cb(struct ev_loop *loop, ev_async *watcher, int revents)
 {
 	(void) loop;
-	struct coio_wdata *wdata = (struct coio_wdata *) watcher->data;
-	wdata->revents = revents;
-	fiber_wakeup(wdata->fiber);
+	(void) revents;
+	struct coio_waker *waker = (struct coio_waker *)watcher;
+	fiber_wakeup(waker->fiber);
 }
 
 API_EXPORT struct coio_waker *
@@ -800,34 +800,32 @@ coio_waker_new(void)
 {
 	struct coio_waker *waker = (struct coio_waker*)calloc(sizeof(coio_waker), 1);
 	ev_async_init(&waker->watcher, coio_waker_cb);
-	waker->wdata = {
-		/* .fiber =   */ fiber(),
-		/* .revents = */ 0
-	};
-	waker->watcher.data = &waker->wdata;
+	waker->fiber = fiber();
 	waker->loop = loop();
 
 	return waker;
 }
 
-API_EXPORT void
+API_EXPORT bool
 coio_waker_wait_timeout(struct coio_waker *waker, double timeout)
 {
-	if (fiber_is_cancelled()) return;
+	if (fiber_is_cancelled())
+		return true;
 
 	/* A special hack to work with zero timeout */
 	ev_set_priority(&waker->watcher, EV_MAXPRI);
 	ev_async_start(waker->loop, &waker->watcher);
 
-	fiber_yield_timeout(timeout);
+	bool timed_out = fiber_yield_timeout(timeout);
 
 	ev_async_stop(waker->loop, &waker->watcher);
+	return timed_out;
 }
 
-API_EXPORT void
+API_EXPORT bool
 coio_waker_wait(struct coio_waker *waker)
 {
-	coio_waker_wait_timeout(waker, TIMEOUT_INFINITY);
+	return coio_waker_wait_timeout(waker, TIMEOUT_INFINITY);
 }
 
 API_EXPORT void
