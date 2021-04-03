@@ -4,7 +4,8 @@
 #include "coio_task.h"
 #include "fio.h"
 #include "unit.h"
-#include "unit.h"
+
+#include <pthread.h>
 
 int
 touch_f(va_list ap)
@@ -113,6 +114,53 @@ test_getaddrinfo(void)
 	footer();
 }
 
+struct test_args {
+	int n;
+	struct coio_waker *waker;
+};
+
+void *
+other_thread(struct test_args* args)
+{
+	for (int i = 0; i < args->n; i++) {
+		usleep(1000);
+		coio_waker_wake(args->waker);
+	}
+	return NULL;
+}
+
+static void
+test_waker(void)
+{
+	header();
+	plan(1);
+
+	struct coio_waker *waker = coio_waker_new();
+	struct test_args args = {
+		10,
+		waker,
+	};
+
+	pthread_t thread_id;
+	pthread_create(&thread_id, NULL, (void *(*)(void *)) other_thread, &args);
+
+	bool err = false;
+	for (int i = 0; i < args.n; i++) {
+		err = coio_waker_wait_timeout(waker, 1);
+		if (err) {
+			break;
+		}
+	}
+
+	is(err, false, "coio_waker_wait_timeout");
+
+	pthread_join(thread_id, NULL);
+	coio_waker_delete(waker);
+
+	check_plan();
+	footer();
+}
+
 static int
 main_f(va_list ap)
 {
@@ -132,6 +180,7 @@ main_f(va_list ap)
 	fiber_join(call_fiber);
 
 	test_getaddrinfo();
+	test_waker();
 
 	ev_break(loop(), EVBREAK_ALL);
 	return 0;

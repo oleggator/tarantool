@@ -12,3 +12,7 @@ ok 1 - getaddrinfo
 ok 2 - getaddrinfo retval
 ok 3 - getaddrinfo error message
 	*** test_getaddrinfo: done ***
+	*** test_waker ***
+1..1
+ok 1 - coio_waker_wait_timeout
+	*** test_waker: done ***
