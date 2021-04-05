@@ -800,8 +800,8 @@ coio_waker_new(void)
 {
 	struct coio_waker *waker = (struct coio_waker*)calloc(sizeof(coio_waker), 1);
 	ev_async_init(&waker->watcher, coio_waker_cb);
-	waker->fiber = fiber();
 	waker->loop = loop();
+	waker->fiber = NULL;
 
 	return waker;
 }
@@ -814,11 +814,14 @@ coio_waker_wait_timeout(struct coio_waker *waker, double timeout)
 
 	/* A special hack to work with zero timeout */
 	ev_set_priority(&waker->watcher, EV_MAXPRI);
+
+	waker->fiber = fiber();
 	ev_async_start(waker->loop, &waker->watcher);
 
 	bool timed_out = fiber_yield_timeout(timeout);
 
 	ev_async_stop(waker->loop, &waker->watcher);
+	waker->fiber = NULL;
 	return timed_out;
 }
 
