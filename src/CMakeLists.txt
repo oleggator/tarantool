@@ -107,7 +107,7 @@ set (server_sources
      curl.c
      httpc.c
      pickle.c
-     cfg.c
+     cfg.cc
      title.c
      proc_title.c
      path_lock.c
