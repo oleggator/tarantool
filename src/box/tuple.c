@@ -102,6 +102,8 @@ static struct tuple_format_vtab tuple_format_runtime_vtab = {
 static struct tuple *
 runtime_tuple_new(struct tuple_format *format, const char *data, const char *end)
 {
+	uint16_t magic_constant = 4;
+	uint16_t alignment = 8;
 	assert(format->vtab.tuple_delete == tuple_format_runtime_vtab.tuple_delete);
 
 	mp_tuple_assert(data, end);
@@ -113,6 +115,7 @@ runtime_tuple_new(struct tuple_format *format, const char *data, const char *end
 		goto end;
 	uint32_t field_map_size = field_map_build_size(&builder);
 	uint32_t data_offset = sizeof(struct tuple) + field_map_size;
+	data_offset += alignment - (data_offset + magic_constant) % alignment;
 	if (tuple_check_data_offset(data_offset) != 0)
 		goto end;
 

@@ -1469,6 +1469,8 @@ static struct tuple *
 memtx_tuple_new_raw_impl(struct tuple_format *format, const char *data,
 			 const char *end, bool validate)
 {
+	uint16_t magic_constant = 4;
+	uint16_t alignment = 8;
 	struct memtx_engine *memtx = (struct memtx_engine *)format->engine;
 	assert(mp_typeof(*data) == MP_ARRAY);
 	struct tuple *tuple = NULL;
@@ -1482,12 +1484,13 @@ memtx_tuple_new_raw_impl(struct tuple_format *format, const char *data,
 		goto end;
 	field_map_size = field_map_build_size(&builder);
 	data_offset = sizeof(struct tuple) + field_map_size;
+	data_offset += alignment - (data_offset + magic_constant) % alignment;
 	if (tuple_check_data_offset(data_offset) != 0)
 		goto end;
 
 	tuple_len = end - data;
 	assert(tuple_len <= UINT32_MAX); /* bsize is UINT32_MAX */
-	total = sizeof(struct tuple) + field_map_size + tuple_len;
+	total = data_offset + tuple_len;
 
 	ERROR_INJECT(ERRINJ_TUPLE_ALLOC, {
 		diag_set(OutOfMemory, total, "slab allocator", "memtx_tuple");
