@@ -1478,7 +1478,6 @@ memtx_tuple_new_raw_impl(struct tuple_format *format, const char *data,
 	size_t total, tuple_len;
 	uint32_t data_offset, field_map_size;
 	char *raw;
-	bool make_compact;
 	if (tuple_field_map_create(format, data, validate, &builder) != 0)
 		goto end;
 	field_map_size = field_map_build_size(&builder);
@@ -1489,12 +1488,6 @@ memtx_tuple_new_raw_impl(struct tuple_format *format, const char *data,
 	tuple_len = end - data;
 	assert(tuple_len <= UINT32_MAX); /* bsize is UINT32_MAX */
 	total = sizeof(struct tuple) + field_map_size + tuple_len;
-
-	make_compact = tuple_can_be_compact(data_offset, tuple_len);
-	if (make_compact) {
-		data_offset -= TUPLE_COMPACT_SAVINGS;
-		total -= TUPLE_COMPACT_SAVINGS;
-	}
 
 	ERROR_INJECT(ERRINJ_TUPLE_ALLOC, {
 		diag_set(OutOfMemory, total, "slab allocator", "memtx_tuple");
@@ -1517,7 +1510,7 @@ memtx_tuple_new_raw_impl(struct tuple_format *format, const char *data,
 		goto end;
 	}
 	tuple_create(tuple, 0, tuple_format_id(format),
-		     data_offset, tuple_len, make_compact);
+		     data_offset, tuple_len);
 	if (format->is_temporary)
 		tuple_set_flag(tuple, TUPLE_IS_TEMPORARY);
 	tuple_format_ref(format);

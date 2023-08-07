@@ -118,9 +118,6 @@ runtime_tuple_new(struct tuple_format *format, const char *data, const char *end
 
 	size_t data_len = end - data;
 	assert(data_len <= UINT32_MAX); /* bsize is UINT32_MAX */
-	bool make_compact = tuple_can_be_compact(data_offset, data_len);
-	if (make_compact)
-		data_offset -= TUPLE_COMPACT_SAVINGS;
 
 	size_t total = data_offset + data_len;
 	tuple = (struct tuple *) smalloc(&runtime_alloc, total);
@@ -131,7 +128,7 @@ runtime_tuple_new(struct tuple_format *format, const char *data, const char *end
 	}
 
 	tuple_create(tuple, 0, tuple_format_id(format),
-		     data_offset, data_len, make_compact);
+		     data_offset, data_len);
 	tuple_format_ref(format);
 	char *raw = (char *) tuple + data_offset;
 	field_map_build(&builder, raw - field_map_size);
